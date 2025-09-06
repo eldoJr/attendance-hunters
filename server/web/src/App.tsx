@@ -8,6 +8,8 @@ import { ReportsPage } from './pages/reports/ReportsPage';
 import { LeaderboardPage } from './pages/leaderboard/LeaderboardPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { FacultyPage } from './pages/faculty/FacultyPage';
+import { DepartmentsPage } from './pages/departments/DepartmentsPage';
+import { CalendarPage } from './pages/calendar/CalendarPage';
 import { QRModePage } from './pages/attendance/QRModePage';
 import { ManualModePage } from './pages/attendance/ManualModePage';
 import { HybridModePage } from './pages/attendance/HybridModePage';
@@ -51,6 +53,8 @@ function App() {
           <Route path={ROUTES.LEADERBOARD} element={<LeaderboardPage />} />
           <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
           <Route path="/faculty" element={<FacultyPage />} />
+          <Route path="/departments" element={<DepartmentsPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/attendance/qr-mode" element={<QRModePage />} />
           <Route path="/attendance/manual-mode" element={<ManualModePage />} />
           <Route path="/attendance/hybrid-mode" element={<HybridModePage />} />
