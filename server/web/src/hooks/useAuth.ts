@@ -14,19 +14,39 @@ export const useAuth = () => {
         id: '1',
         email: 'admin@attendance.com',
         name: 'Admin User',
-        role: role as 'student' | 'faculty' | 'admin'
+        role: role as 'student' | 'staff' | 'admin'
       });
     }
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    // Implement login logic
+  const login = async (email: string, password: string, role?: 'admin' | 'staff' | 'student') => {
     setLoading(true);
     try {
-      // API call to login
-      // Set user and token
-      setLoading(false);
+      // Demo login logic - replace with actual API call
+      const isValidLogin = (
+        (role === 'admin' && email === 'admin@attendance.com' && password === 'admin123') ||
+        (role === 'staff' && email === 'staff@university.edu' && password === 'staff123') ||
+        (role === 'student' && email === 'student@university.edu' && password === 'student123')
+      );
+
+      if (isValidLogin && role) {
+        const token = `${role}_token_${Date.now()}`;
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user_role', role);
+        
+        const newUser = {
+          id: '1',
+          email: email,
+          name: role === 'admin' ? 'Admin User' : role === 'staff' ? 'Staff User' : 'Student User',
+          role: role
+        };
+        setUser(newUser);
+        setLoading(false);
+        return newUser;
+      } else {
+        throw new Error('Invalid credentials');
+      }
     } catch (error) {
       setLoading(false);
       throw error;
@@ -35,7 +55,9 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_role');
     setUser(null);
+    window.location.href = '/';
   };
 
   return {

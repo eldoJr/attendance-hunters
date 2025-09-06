@@ -3,25 +3,47 @@ import { ROUTES } from '../../constants';
 import { BarChart3, GraduationCap, FileText, Trophy, Settings, Users, Target, UserCheck, Building2, Calendar } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { useAppStore } from '../../store';
+import { useAuth } from '../../hooks/useAuth';
 
 export const Sidebar: React.FC = () => {
   const [activeItem, setActiveItem] = useState(window.location.pathname);
   const { addNotification } = useAppStore();
+  const { user } = useAuth();
 
-  const mainMenuItems = [
-    { name: 'Dashboard', path: ROUTES.DASHBOARD, icon: BarChart3, badge: null },
-    { name: 'Attendance', path: ROUTES.ATTENDANCE, icon: Target, badge: null },
-    { name: 'Classes', path: ROUTES.CLASSES, icon: GraduationCap, badge: null },
-    { name: 'Students', path: '/students', icon: Users, badge: null },
-    { name: 'Faculty', path: '/faculty', icon: UserCheck, badge: null },
-    { name: 'Departments', path: '/departments', icon: Building2, badge: null },
-    { name: 'Calendar', path: '/calendar', icon: Calendar, badge: null },
-  ];
+  const getMenuItems = () => {
+    if (user?.role === 'admin') {
+      return [
+        { name: 'Dashboard', path: ROUTES.DASHBOARD, icon: BarChart3, badge: null },
+        { name: 'Attendance', path: ROUTES.ATTENDANCE, icon: Target, badge: null },
+        { name: 'Classes', path: ROUTES.CLASSES, icon: GraduationCap, badge: null },
+        { name: 'Students', path: '/students', icon: Users, badge: null },
+        { name: 'Faculty', path: '/faculty', icon: UserCheck, badge: null },
+        { name: 'Departments', path: '/departments', icon: Building2, badge: null },
+        { name: 'Calendar', path: '/calendar', icon: Calendar, badge: null },
+      ];
+    } else if (user?.role === 'staff') {
+      return [
+        { name: 'Dashboard', path: '/staff-dashboard', icon: BarChart3, badge: null },
+        { name: 'Attendance', path: ROUTES.ATTENDANCE, icon: Target, badge: null },
+        { name: 'Classes', path: ROUTES.CLASSES, icon: GraduationCap, badge: null },
+        { name: 'Reports', path: ROUTES.REPORTS, icon: FileText, badge: null },
+      ];
+    } else if (user?.role === 'student') {
+      return [
+        { name: 'Dashboard', path: '/student-dashboard', icon: BarChart3, badge: null },
+        { name: 'Attendance', path: ROUTES.ATTENDANCE, icon: Target, badge: null },
+        { name: 'Leaderboard', path: ROUTES.LEADERBOARD, icon: Trophy, badge: null },
+      ];
+    }
+    return [];
+  };
 
-  const analyticsItems = [
+  const mainMenuItems = getMenuItems();
+
+  const analyticsItems = user?.role === 'admin' ? [
     { name: 'Reports', path: ROUTES.REPORTS, icon: FileText, badge: null },
     { name: 'Leaderboard', path: ROUTES.LEADERBOARD, icon: Trophy, badge: null },
-  ];
+  ] : [];
 
   const systemItems = [
     { name: 'Settings', path: ROUTES.SETTINGS, icon: Settings, badge: null },
@@ -83,8 +105,8 @@ export const Sidebar: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 p-4 overflow-y-auto pt-6">
           {renderMenuGroup('Main', mainMenuItems)}
-          {renderMenuGroup('Analytics', analyticsItems)}
-          {renderMenuGroup('System', systemItems)}
+          {analyticsItems.length > 0 && renderMenuGroup('Analytics', analyticsItems)}
+          {user?.role === 'admin' && renderMenuGroup('System', systemItems)}
         </nav>
 
         {/* Footer */}

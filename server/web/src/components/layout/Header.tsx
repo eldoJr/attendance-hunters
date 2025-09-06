@@ -324,8 +324,8 @@ export const Header: React.FC = () => {
                       className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" 
                       onClick={() => {
                         closeAllDropdowns();
-                        addNotification({ message: 'Logged out successfully', type: 'info' });
                         logout();
+                        addNotification({ message: 'Logged out successfully', type: 'info' });
                       }}
                     >
                       Sign Out
