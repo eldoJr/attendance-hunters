@@ -30,7 +30,7 @@ export const Header: React.FC = () => {
   const [quickActionDropdownOpen, setQuickActionDropdownOpen] = useState(false);
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const { notifications, addNotification } = useAppStore();
 
@@ -92,8 +92,9 @@ export const Header: React.FC = () => {
               <Search className="h-4 w-4" />
             </Button>
 
-            {/* Quick Actions */}
-            <DropdownMenu open={quickActionDropdownOpen} onOpenChange={setQuickActionDropdownOpen}>
+            {/* Quick Actions - Admin Only */}
+            {user?.role === 'admin' && (
+              <DropdownMenu open={quickActionDropdownOpen} onOpenChange={setQuickActionDropdownOpen}>
               <DropdownMenuTrigger 
                 className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 px-3"
                 onClick={(e) => {
@@ -146,12 +147,13 @@ export const Header: React.FC = () => {
                   </DropdownMenuContent>
                 </>
               )}
-            </DropdownMenu>
+              </DropdownMenu>
+            )}
 
             {/* Notifications */}
             <DropdownMenu open={notificationDropdownOpen} onOpenChange={setNotificationDropdownOpen}>
               <DropdownMenuTrigger 
-                className="relative inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 w-9"
+                className="relative inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 px-3"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (notificationDropdownOpen) {
@@ -163,6 +165,7 @@ export const Header: React.FC = () => {
                 }}
               >
                 <Bell className={`h-4 w-4 ${notificationCount > 0 ? 'animate-pulse' : ''}`} />
+                <span className="hidden sm:inline">Notifications</span>
                 {notificationCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-red-500 hover:bg-red-500 animate-pulse">
                     {notificationCount}
@@ -253,12 +256,19 @@ export const Header: React.FC = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">John Admin</p>
-                          <p className="text-sm text-muted-foreground">john.admin@university.edu</p>
+                          <p className="font-medium">
+                            {user?.role === 'admin' ? 'Admin User' : 
+                             user?.role === 'staff' ? 'Staff User' : 'Alex Kumar'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {user?.role === 'admin' ? 'admin@attendance.com' : 
+                             user?.role === 'staff' ? 'staff@university.edu' : 'alex.kumar@university.edu'}
+                          </p>
                         </div>
                       </div>
                       <Badge variant="outline" className="mt-2 text-xs">
-                        Administrator
+                        {user?.role === 'admin' ? 'Administrator' : 
+                         user?.role === 'staff' ? 'Faculty Staff' : 'Student'}
                       </Badge>
                     </div>
                     <DropdownMenuItem 

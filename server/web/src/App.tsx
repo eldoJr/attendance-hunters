@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { AttendancePage } from './pages/attendance/AttendancePage';
 import { ClassesPage } from './pages/classes/ClassesPage';
@@ -13,6 +13,10 @@ import { CalendarPage } from './pages/calendar/CalendarPage';
 import { AdminLoginPage } from './pages/auth/AdminLoginPage';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { StudentDashboard } from './pages/student/StudentDashboard';
+import { StudentSchedulePage } from './pages/calendar/StudentSchedulePage';
+import { StudentClassesPage } from './pages/classes/StudentClassesPage';
+import { StudentAttendancePage } from './pages/attendance/StudentAttendancePage';
+import { StudentProfilePage } from './pages/profile/StudentProfilePage';
 import { QRModePage } from './pages/attendance/QRModePage';
 import { ManualModePage } from './pages/attendance/ManualModePage';
 import { HybridModePage } from './pages/attendance/HybridModePage';
@@ -85,7 +89,11 @@ function AppContent() {
             <>
               <Route path="/" element={<Navigate to="/student-dashboard" replace />} />
               <Route path="/student-dashboard" element={<StudentDashboard />} />
-              <Route path={ROUTES.ATTENDANCE} element={<AttendancePage />} />
+              <Route path={ROUTES.ATTENDANCE} element={<StudentAttendancePage />} />
+              <Route path="/calendar" element={<StudentSchedulePage />} />
+              <Route path={ROUTES.CLASSES} element={<StudentClassesPage />} />
+              <Route path="/profile" element={<StudentProfilePage />} />
+              <Route path={ROUTES.LEADERBOARD} element={<LeaderboardPage />} />
             </>
           )}
         </>
