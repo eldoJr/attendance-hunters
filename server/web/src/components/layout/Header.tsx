@@ -258,11 +258,11 @@ export const Header: React.FC = () => {
                         <div>
                           <p className="font-medium">
                             {user?.role === 'admin' ? 'Admin User' : 
-                             user?.role === 'staff' ? 'Staff User' : 'Alex Kumar'}
+                             user?.role === 'staff' ? 'Staff User' : 'Eldo Macuacua'}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {user?.role === 'admin' ? 'admin@attendance.com' : 
-                             user?.role === 'staff' ? 'staff@university.edu' : 'alex.kumar@university.edu'}
+                             user?.role === 'staff' ? 'staff@university.edu' : 'macuacua.eldo@university.edu'}
                           </p>
                         </div>
                       </div>
