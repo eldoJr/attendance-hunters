@@ -22,12 +22,7 @@ export const LoginPage: React.FC = () => {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const destination = user.role === 'staff' ? '/staff-dashboard' : '/student-dashboard';
-      navigate(destination, { replace: true });
-    }
-  }, [isAuthenticated, user, navigate]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +31,8 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password, activeRole);
       addNotification({ message: `Welcome back, ${activeRole}!`, type: 'success' });
+      const destination = activeRole === 'staff' ? '/staff-dashboard' : '/student-dashboard';
+      window.location.href = destination;
     } catch (error) {
       setError('Invalid email or password');
       addNotification({ message: 'Invalid credentials. Please try again.', type: 'error' });
@@ -141,7 +138,14 @@ export const LoginPage: React.FC = () => {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing In...' : `Sign In as ${activeRole === 'student' ? 'Student' : 'Staff'}`}
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing In...
+                  </div>
+                ) : (
+                  `Sign In as ${activeRole === 'student' ? 'Student' : 'Staff'}`
+                )}
               </Button>
             </form>
 

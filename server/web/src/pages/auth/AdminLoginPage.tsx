@@ -19,11 +19,7 @@ export const AdminLoginPage: React.FC = () => {
   const { addNotification } = useAppStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, user, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +28,7 @@ export const AdminLoginPage: React.FC = () => {
     try {
       await login(email, password, 'admin');
       addNotification({ message: 'Admin login successful!', type: 'success' });
+      window.location.href = '/dashboard';
     } catch (error) {
       setError('Invalid admin credentials. Please try again.');
       addNotification({ message: 'Invalid admin credentials', type: 'error' });
@@ -109,9 +106,15 @@ export const AdminLoginPage: React.FC = () => {
                 type="submit"
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                 disabled={loading}
-                onClick={handleSubmit}
               >
-                {loading ? 'Signing In...' : 'Sign In as Admin'}
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing In...
+                  </div>
+                ) : (
+                  'Sign In as Admin'
+                )}
               </Button>
             </form>
 

@@ -21,7 +21,6 @@ export const useAuth = () => {
   }, []);
 
   const login = async (email: string, password: string, role?: 'admin' | 'staff' | 'student') => {
-    setLoading(true);
     try {
       // Demo login logic - replace with actual API call
       const isValidLogin = (
@@ -31,6 +30,9 @@ export const useAuth = () => {
       );
 
       if (isValidLogin && role) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const token = `${role}_token_${Date.now()}`;
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user_role', role);
@@ -41,14 +43,17 @@ export const useAuth = () => {
           name: role === 'admin' ? 'Admin User' : role === 'staff' ? 'Staff User' : 'Student User',
           role: role
         };
-        setUser(newUser);
-        setLoading(false);
-        return newUser;
+        
+        // Use a Promise to ensure state is set before returning
+        return new Promise<typeof newUser>((resolve) => {
+          setUser(newUser);
+          // Small delay to ensure state update is processed
+          setTimeout(() => resolve(newUser), 50);
+        });
       } else {
         throw new Error('Invalid credentials');
       }
     } catch (error) {
-      setLoading(false);
       throw error;
     }
   };
