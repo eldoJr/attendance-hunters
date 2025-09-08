@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -19,8 +19,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [activeRole, setActiveRole] = useState<UserRole>('student');
   const { addNotification } = useAppStore();
-  const { login, isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();
+
 
 
 

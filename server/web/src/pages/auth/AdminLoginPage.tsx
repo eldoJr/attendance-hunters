@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -15,9 +15,9 @@ export const AdminLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, isAuthenticated, user } = useAuth();
+  const { login } = useAuth();
   const { addNotification } = useAppStore();
-  const navigate = useNavigate();
+
 
 
 

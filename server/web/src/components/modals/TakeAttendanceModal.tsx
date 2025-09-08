@@ -4,7 +4,7 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
-import { X, QrCode, UserCheck, Zap, Calendar, Clock, Users, BookOpen, ArrowRight, CheckCircle, Sparkles } from 'lucide-react';
+import { X, QrCode, UserCheck, Zap, Calendar, Clock, Users, BookOpen, ArrowRight, CheckCircle } from 'lucide-react';
 import { COURSES } from '../../data/mockStudents';
 
 interface TakeAttendanceModalProps {
@@ -19,7 +19,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
   const [sessionType, setSessionType] = useState('');
   const [selectedMode, setSelectedMode] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
+
 
   const courses = COURSES;
   const sections = ['A', 'B', 'C', 'D'];
@@ -91,7 +91,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
     if (selectedCourse && selectedSection && sessionType && currentStep === 1) {
       setTimeout(() => handleNext(), 300);
     }
-  }, [selectedCourse, selectedSection, sessionType, currentStep]);
+  }, [selectedCourse, selectedSection, sessionType, currentStep, handleNext]);
 
   const selectedCourseData = courses.find(c => c.id === selectedCourse);
 

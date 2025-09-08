@@ -8,7 +8,7 @@ import { TakeAttendanceModal } from '../../components/modals/TakeAttendanceModal
 import { TrendingUp, Users, Calendar, AlertTriangle, Plus } from 'lucide-react';
 import { AttendanceChart, ClassPerformanceChart } from '../../components/charts';
 import { useAttendance } from '../../hooks/useAttendance';
-import { TableSkeleton } from '../../components/ui/table-skeleton';
+
 
 export const Dashboard: React.FC = () => {
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
