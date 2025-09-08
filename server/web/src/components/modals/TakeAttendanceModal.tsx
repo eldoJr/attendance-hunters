@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -55,11 +55,11 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
     }
   ];
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
-  };
+  }, [currentStep]);
 
   const handleBack = () => {
     if (currentStep > 1) {
