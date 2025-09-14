@@ -2,9 +2,13 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   role: 'student' | 'staff' | 'admin';
   avatar?: string;
+  department?: string;
+  designation?: string;
 }
 
 export interface AttendanceRecord {

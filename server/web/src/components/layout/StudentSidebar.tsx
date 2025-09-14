@@ -3,7 +3,12 @@ import { BarChart3, Target, Trophy, User, Calendar, BookOpen } from 'lucide-reac
 import { Badge } from '../ui/badge';
 import { useAppStore } from '../../store';
 
-export const StudentSidebar: React.FC = () => {
+interface StudentSidebarProps {
+  isMobileOpen?: boolean;
+  setIsMobileOpen?: (open: boolean) => void;
+}
+
+export const StudentSidebar: React.FC<StudentSidebarProps> = ({ isMobileOpen = false, setIsMobileOpen }) => {
   const [activeItem, setActiveItem] = useState(window.location.pathname);
   const { addNotification } = useAppStore();
 
@@ -21,6 +26,7 @@ export const StudentSidebar: React.FC = () => {
 
   const handleItemClick = (path: string) => {
     setActiveItem(path);
+    setIsMobileOpen?.(false);
     addNotification({ message: `Navigated to ${path.replace('/', '').replace('-', ' ')}`, type: 'info' });
   };
 
@@ -38,7 +44,7 @@ export const StudentSidebar: React.FC = () => {
               key={item.path}
               href={item.path}
               onClick={() => handleItemClick(item.path)}
-              className={`group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              className={`group flex items-center justify-between px-3 py-2 md:py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
@@ -48,7 +54,7 @@ export const StudentSidebar: React.FC = () => {
                 <Icon className={`h-4 w-4 transition-colors ${
                   isActive ? 'text-primary-foreground' : 'group-hover:text-foreground'
                 }`} />
-                <span>{item.name}</span>
+                <span className="truncate">{item.name}</span>
               </div>
               {item.badge && (
                 <Badge 
@@ -70,18 +76,36 @@ export const StudentSidebar: React.FC = () => {
   );
 
   return (
-    <aside className="w-64 bg-background/95 backdrop-blur-sm border-r border-border/50">
-      <div className="h-full flex flex-col">
-        <nav className="flex-1 p-4 overflow-y-auto pt-6">
-          {renderMenuGroup('Main', mainMenuItems)}
-          {renderMenuGroup('Academic', academicItems)}
-        </nav>
-        <div className="p-4 border-t border-border/50">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Academic Year 2024-25</p>
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-30" 
+          onClick={() => setIsMobileOpen?.(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed md:static top-16 md:top-0 inset-y-0 left-0 z-30 md:z-auto
+        w-64 md:w-56
+        bg-background/95 backdrop-blur-sm border-r border-border/50
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        max-h-screen overflow-hidden
+      `}>
+        <div className="h-full flex flex-col">
+          <nav className="flex-1 p-3 md:p-4 overflow-y-auto pt-4 md:pt-6">
+            {renderMenuGroup('Main', mainMenuItems)}
+            {renderMenuGroup('Academic', academicItems)}
+          </nav>
+          <div className="p-3 md:p-4 border-t border-border/50">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Academic Year 2024-25</p>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

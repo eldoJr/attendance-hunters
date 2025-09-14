@@ -1,66 +1,65 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../types';
+import { apiService } from '../services/api';
+
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
+interface AuthMeResponse extends User {}
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const role = localStorage.getItem('user_role');
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      
+      if (token) {
+        try {
+          const response = await apiService.get<AuthMeResponse>('/auth/me');
+          if (response.success && response.data) {
+            setUser(response.data as User);
+          } else {
+            localStorage.removeItem('auth_token');
+          }
+        } catch (error) {
+          localStorage.removeItem('auth_token');
+        }
+      }
+      setLoading(false);
+    };
     
-    if (token && role) {
-      setUser({
-        id: '1',
-        email: 'admin@attendance.com',
-        name: 'Admin User',
-        role: role as 'student' | 'staff' | 'admin'
-      });
-    }
-    setLoading(false);
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string, role?: 'admin' | 'staff' | 'student') => {
     try {
-      // Demo login logic - replace with actual API call
-      const isValidLogin = (
-        (role === 'admin' && email === 'admin@attendance.com' && password === 'admin123') ||
-        (role === 'staff' && email === 'staff@university.edu' && password === 'staff123') ||
-        (role === 'student' && email === 'student@university.edu' && password === 'student123')
-      );
-
-      if (isValidLogin && role) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const token = `${role}_token_${Date.now()}`;
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_role', role);
-        
-        const newUser = {
-          id: '1',
-          email: email,
-          name: role === 'admin' ? 'Admin User' : role === 'staff' ? 'Staff User' : 'Student User',
-          role: role
-        };
-        
-        // Use a Promise to ensure state is set before returning
-        return new Promise<typeof newUser>((resolve) => {
-          setUser(newUser);
-          // Small delay to ensure state update is processed
-          setTimeout(() => resolve(newUser), 50);
-        });
-      } else {
-        throw new Error('Invalid credentials');
+      const response = await apiService.post<LoginResponse>('/auth/login', { email, password, role });
+      
+      if (response.success && response.data) {
+        const loginData = response.data as LoginResponse;
+        if (loginData.token) {
+          localStorage.setItem('auth_token', loginData.token);
+          setUser(loginData.user);
+          return loginData.user;
+        }
       }
-    } catch (error) {
-      throw error;
+      throw new Error(response.message || 'Invalid credentials');
+    } catch (error: any) {
+      throw new Error(error.message || 'Login failed');
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiService.post('/auth/logout', {});
+    } catch (error) {
+      // Continue with logout even if API call fails
+    }
     localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_role');
     setUser(null);
     window.location.href = '/';
   };

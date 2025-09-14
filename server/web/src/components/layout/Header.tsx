@@ -15,14 +15,20 @@ import {
   Monitor,
   ChevronRight,
   Circle,
-  User
+  User,
+  Menu
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppStore } from '../../store';
+import logo from '../../assets/icons/logo.png';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onMobileMenuToggle?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCount] = useState(0);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -51,24 +57,38 @@ export const Header: React.FC = () => {
   ] as const;
 
   return (
-    <header className="bg-background border-b border-border sticky top-0 z-50">
-      <div className="px-4 lg:px-6">
+    <header className="bg-background border-b border-border sticky top-0 z-50 md:z-30">
+      <div className="px-4 md:px-6">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <div className="flex items-center gap-3">
-
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">
+          {/* Mobile Menu Button & Logo */}
+          <div className="flex items-center gap-3 md:gap-4">
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-2"
+              onClick={onMobileMenuToggle}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
+            <img 
+              src={logo} 
+              alt="Attendance Hunters" 
+              className="h-12 w-12 md:h-16 md:w-16 object-contain"
+            />
+            <div className="hidden sm:block">
+              <h1 className="text-lg md:text-xl font-semibold text-foreground">
                 Attendance Hunters
               </h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">
+              <p className="text-xs text-muted-foreground">
                 Academic Year 2024-25
               </p>
             </div>
           </div>
           
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-6">
+          <div className="hidden md:flex flex-1 max-w-md mx-4 md:mx-6">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
@@ -81,12 +101,12 @@ export const Header: React.FC = () => {
           </div>
           
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             {/* Mobile Search */}
             <Button 
               variant="ghost" 
               size="sm" 
-              className="md:hidden"
+              className="md:hidden p-2"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
             >
               <Search className="h-4 w-4" />
@@ -96,7 +116,7 @@ export const Header: React.FC = () => {
             {user?.role === 'admin' && (
               <DropdownMenu open={quickActionDropdownOpen} onOpenChange={setQuickActionDropdownOpen}>
               <DropdownMenuTrigger 
-                className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 px-3"
+                className="hidden sm:inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 md:h-9 px-2 md:px-3"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (quickActionDropdownOpen) {
@@ -153,7 +173,7 @@ export const Header: React.FC = () => {
             {/* Notifications */}
             <DropdownMenu open={notificationDropdownOpen} onOpenChange={setNotificationDropdownOpen}>
               <DropdownMenuTrigger 
-                className="relative inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 px-3"
+                className="relative inline-flex items-center justify-center gap-1 md:gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 md:h-9 px-2 md:px-3"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (notificationDropdownOpen) {
@@ -165,7 +185,7 @@ export const Header: React.FC = () => {
                 }}
               >
                 <Bell className={`h-4 w-4 ${notificationCount > 0 ? 'animate-pulse' : ''}`} />
-                <span className="hidden sm:inline">Notifications</span>
+                <span className="hidden md:inline">Notifications</span>
                 {notificationCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-red-500 hover:bg-red-500 animate-pulse">
                     {notificationCount}
@@ -227,7 +247,7 @@ export const Header: React.FC = () => {
             {/* User Menu */}
             <DropdownMenu open={userDropdownOpen} onOpenChange={setUserDropdownOpen}>
               <DropdownMenuTrigger 
-                className="relative inline-flex items-center justify-center rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-9 w-9"
+                className="relative inline-flex items-center justify-center rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 w-8 md:h-9 md:w-9"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (userDropdownOpen) {
@@ -238,9 +258,11 @@ export const Header: React.FC = () => {
                   }
                 }}
               >
-                <Avatar className="h-8 w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    <User className="h-4 w-4" />
+                <Avatar className="h-7 w-7 md:h-8 md:w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 
+                     user?.name ? user.name.charAt(0).toUpperCase() : 
+                     <User className="h-3 w-3 md:h-4 md:w-4" />}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -257,18 +279,21 @@ export const Header: React.FC = () => {
                         </Avatar>
                         <div>
                           <p className="font-medium">
-                            {user?.role === 'admin' ? 'Admin User' : 
-                             user?.role === 'staff' ? 'Staff User' : 'Eldo Macuacua'}
+                            {user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 
+                             user?.role === 'admin' ? 'Admin User' : 
+                             user?.role === 'staff' ? 'Staff User' : 'Student User'}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {user?.role === 'admin' ? 'admin@attendance.com' : 
-                             user?.role === 'staff' ? 'staff@university.edu' : 'macuacua.eldo@university.edu'}
+                            {user?.email || 
+                             (user?.role === 'admin' ? 'admin@attendance.com' : 
+                              user?.role === 'staff' ? 'staff@university.edu' : 'student@university.edu')}
                           </p>
                         </div>
                       </div>
-                      <Badge variant="outline" className="mt-2 text-xs">
+                      <Badge variant="outline" className="mt-2 text-xs capitalize">
                         {user?.role === 'admin' ? 'Administrator' : 
-                         user?.role === 'staff' ? 'Faculty Staff' : 'Student'}
+                         user?.role === 'staff' ? 'Faculty Staff' : 
+                         user?.role === 'student' ? 'Student' : user?.role || 'User'}
                       </Badge>
                     </div>
                     <DropdownMenuItem 
@@ -349,12 +374,12 @@ export const Header: React.FC = () => {
         
         {/* Mobile Search Overlay */}
         {mobileSearchOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border p-4 z-50 animate-in slide-in-from-top-2">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border p-3 z-50 animate-in slide-in-from-top-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search students, classes, or reports..."
-                className="pl-10 bg-muted/50 border-0 focus:bg-background"
+                placeholder="Search..."
+                className="pl-10 bg-muted/50 border-0 focus:bg-background text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
