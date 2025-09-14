@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -9,12 +9,25 @@ import { GraduationCap, Users, UserPlus, Upload, Plus, Search, Edit, BarChart3, 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../components/ui/dropdown-menu';
 import { exportToExcel } from '../../utils/exportUtils';
 import { useAppStore } from '../../store';
-import { COURSES } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 export const ClassesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [courses, setCourses] = useState<any[]>([]);
   const { addNotification } = useAppStore();
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const coursesData = await apiService.getCourses();
+        setCourses(coursesData);
+      } catch (error) {
+        console.error('Failed to load courses:', error);
+      }
+    };
+    loadCourses();
+  }, []);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -25,16 +38,16 @@ export const ClassesPage: React.FC = () => {
     }
   }, [openDropdown]);
   
-  const classes = COURSES.map((course, index) => ({
+  const classes = courses.map((course, index) => ({
     id: index + 1,
-    name: course.name.split(' – ')[1],
+    name: course.name,
     code: course.code,
     faculty: course.faculty,
     students: course.students,
-    enrolled: course.enrolled,
-    schedule: course.schedule,
-    room: course.room,
-    status: course.status
+    enrolled: course.students || 30,
+    schedule: course.schedule || 'Mon, Wed, Fri 10:00-11:30',
+    room: `Room ${100 + index}`,
+    status: 'Active'
   }));
 
   const filteredClasses = classes.filter(cls => 

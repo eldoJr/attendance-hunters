@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -28,7 +28,7 @@ import {
   History
 } from 'lucide-react';
 import { exportToPDF, exportToExcel } from '../../utils/exportUtils';
-import { MOCK_STUDENTS } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 interface Student {
   id: string;
@@ -47,8 +47,6 @@ interface Student {
   gpa: number;
 }
 
-const mockStudents = MOCK_STUDENTS;
-
 export const StudentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('All');
@@ -57,13 +55,26 @@ export const StudentsPage: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState('All');
   const [attendanceFilter, setAttendanceFilter] = useState('All');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
 
-  const departments = Array.from(new Set(mockStudents.map(s => s.department)));
-  const sections = Array.from(new Set(mockStudents.map(s => s.section)));
-  const years = Array.from(new Set(mockStudents.map(s => s.year)));
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const studentsData = await apiService.getStudents();
+        setStudents(studentsData);
+      } catch (error) {
+        console.error('Failed to load students:', error);
+      }
+    };
+    loadStudents();
+  }, []);
+
+  const departments = Array.from(new Set(students.map(s => s.department)));
+  const sections = Array.from(new Set(students.map(s => s.section)));
+  const years = Array.from(new Set(students.map(s => s.year)));
 
   const filteredStudents = useMemo(() => {
-    return mockStudents.filter(student => {
+    return students.filter(student => {
       const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (student.studentId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -83,7 +94,7 @@ export const StudentsPage: React.FC = () => {
       
       return matchesSearch && matchesYear && matchesStatus && matchesDepartment && matchesSection && matchesAttendance;
     });
-  }, [searchTerm, selectedYear, selectedStatus, selectedDepartment, selectedSection, attendanceFilter]);
+  }, [searchTerm, selectedYear, selectedStatus, selectedDepartment, selectedSection, attendanceFilter, students]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -152,7 +163,7 @@ export const StudentsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                  <div className="text-2xl font-bold text-primary mt-1">{MOCK_STUDENTS.length}</div>
+                  <div className="text-2xl font-bold text-primary mt-1">{students.length}</div>
                   <p className="text-xs text-muted-foreground mt-1">enrolled students</p>
                 </div>
                 <div className="p-2 bg-primary/10 rounded-full">
@@ -167,7 +178,7 @@ export const StudentsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Students</p>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{MOCK_STUDENTS.filter(s => s.status === 'Active').length}</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{students.filter(s => s.status === 'Active').length}</div>
                   <p className="text-xs text-muted-foreground mt-1">currently enrolled</p>
                 </div>
                 <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -182,7 +193,7 @@ export const StudentsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Average Attendance</p>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{Math.round(MOCK_STUDENTS.reduce((acc, s) => acc + (s.attendance || 0), 0) / MOCK_STUDENTS.length)}%</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{students.length > 0 ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length) : 0}%</div>
                   <p className="text-xs text-muted-foreground mt-1">this semester</p>
                 </div>
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -197,7 +208,7 @@ export const StudentsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">At Risk</p>
-                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{MOCK_STUDENTS.filter(s => (s.attendance || 0) < 70).length}</div>
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{students.filter(s => (s.attendance || 0) < 70).length}</div>
                   <p className="text-xs text-muted-foreground mt-1">below 70% attendance</p>
                 </div>
                 <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">

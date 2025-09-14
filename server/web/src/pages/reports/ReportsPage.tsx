@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -11,7 +11,7 @@ import { FileText, Download, TrendingUp, Users, AlertTriangle, Calendar, Search,
 import { AttendanceChart, ClassPerformanceChart } from '../../components/charts';
 import { exportToExcel, exportToPDF } from '../../utils/exportUtils';
 import { useAppStore } from '../../store';
-import { COURSES, MOCK_STUDENTS } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 interface ReportData {
   id: string;
@@ -101,7 +101,20 @@ export const ReportsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [students, setStudents] = useState<any[]>([]);
   const { addNotification } = useAppStore();
+
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const studentsData = await apiService.getStudents();
+        setStudents(studentsData);
+      } catch (error) {
+        console.error('Failed to load students:', error);
+      }
+    };
+    loadStudents();
+  }, []);
 
   const filteredReports = mockReports.filter(report => {
     const matchesSearch = report.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -215,7 +228,7 @@ export const ReportsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Overall Attendance</p>
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{Math.round(MOCK_STUDENTS.reduce((acc, s) => acc + (s.attendance || 0), 0) / MOCK_STUDENTS.length)}%</div>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{students.length > 0 ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length) : 0}%</div>
                   <p className="text-xs text-muted-foreground mt-1">semester average</p>
                 </div>
                 <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -245,7 +258,7 @@ export const ReportsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">At-Risk Students</p>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{MOCK_STUDENTS.filter(s => (s.attendance || 0) < 75).length}</div>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{students.filter(s => (s.attendance || 0) < 75).length}</div>
                   <p className="text-xs text-muted-foreground mt-1">below 75% attendance</p>
                 </div>
                 <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
@@ -486,7 +499,7 @@ export const ReportsPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium text-red-800 dark:text-red-300">Critical Alert</p>
-                  <p className="text-sm text-red-600 dark:text-red-400">{MOCK_STUDENTS.filter(s => (s.attendance || 0) < 70).length} students missed 30%+ of classes</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">{students.filter(s => (s.attendance || 0) < 70).length} students missed 30%+ of classes</p>
                 </div>
               </div>
             </CardContent>

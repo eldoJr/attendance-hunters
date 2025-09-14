@@ -9,7 +9,8 @@ const router = express.Router();
 // Validation middleware
 const validateLogin = [
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 1 }).withMessage('Password is required')
+  body('password').isLength({ min: 1 }).withMessage('Password is required'),
+  body('role').optional().isIn(['admin', 'staff', 'student']).withMessage('Invalid role')
 ];
 
 // Routes

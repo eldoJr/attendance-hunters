@@ -7,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import QRCode from 'react-qr-code';
 import { RefreshCw, ArrowRight } from 'lucide-react';
-import { MOCK_STUDENTS } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 export const HybridModePage: React.FC = () => {
-  const [students, setStudents] = useState(MOCK_STUDENTS.map(s => ({ ...s, present: false, method: '' as 'qr' | 'manual' | '' })));
+  const [students, setStudents] = useState<any[]>([]);
   const [qrValue, setQrValue] = useState('');
   const [timeLeft, setTimeLeft] = useState(180);
   const [sessionActive, setSessionActive] = useState(false);
@@ -25,6 +25,18 @@ export const HybridModePage: React.FC = () => {
       const parsed = JSON.parse(storedSession);
       setSessionData(parsed);
     }
+    
+    // Load students
+    const loadStudents = async () => {
+      try {
+        const studentsData = await apiService.getStudents();
+        setStudents(studentsData.map(s => ({ ...s, present: false, method: '' as 'qr' | 'manual' | '' })));
+      } catch (error) {
+        console.error('Failed to load students:', error);
+      }
+    };
+    
+    loadStudents();
     generateQRCode();
   }, []);
 

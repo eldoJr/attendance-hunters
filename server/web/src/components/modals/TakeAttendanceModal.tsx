@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { X, QrCode, UserCheck, Zap, Calendar, Clock, Users, BookOpen, ArrowRight, CheckCircle } from 'lucide-react';
-import { COURSES } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 interface TakeAttendanceModalProps {
   isOpen: boolean;
@@ -19,9 +19,19 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
   const [sessionType, setSessionType] = useState('');
   const [selectedMode, setSelectedMode] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
+  const [courses, setCourses] = useState<any[]>([]);
 
-
-  const courses = COURSES;
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const coursesData = await apiService.getCourses();
+        setCourses(coursesData);
+      } catch (error) {
+        console.error('Failed to load courses:', error);
+      }
+    };
+    loadCourses();
+  }, []);
   const sections = ['A', 'B', 'C', 'D'];
   const sessionTypes = ['Lecture', 'Lab', 'Tutorial', 'Seminar'];
 
@@ -77,7 +87,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
         section: selectedSection,
         sessionType,
         timestamp: Date.now(),
-        courseName: courses.find(c => c.id === selectedCourse)?.name
+        courseName: Array.isArray(courses) ? courses.find(c => c.id === selectedCourse)?.name : 'Unknown Course'
       };
       localStorage.setItem('attendanceSession', JSON.stringify(sessionData));
       window.location.href = selectedModeData.route;
@@ -93,7 +103,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
     }
   }, [selectedCourse, selectedSection, sessionType, currentStep, handleNext]);
 
-  const selectedCourseData = courses.find(c => c.id === selectedCourse);
+  const selectedCourseData = Array.isArray(courses) ? courses.find(c => c.id === selectedCourse) : null;
 
   if (!isOpen) return null;
 
@@ -173,7 +183,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
                     className="w-full p-3 border rounded-lg bg-background text-sm"
                   >
                     <option value="">Select Course</option>
-                    {courses.map(course => (
+                    {Array.isArray(courses) && courses.map(course => (
                       <option key={course.id} value={course.id}>
                         {course.name} ({course.students} students)
                       </option>

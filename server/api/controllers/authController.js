@@ -17,7 +17,7 @@ const generateToken = (user) => {
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     const prisma = getClient();
 
     // Find user
@@ -33,8 +33,17 @@ const login = async (req, res, next) => {
       return res.status(401).json(error('Invalid credentials', 401));
     }
 
-    // Check password (for now, skip bcrypt check - will implement later)
-    // const isValidPassword = await bcrypt.compare(password, user.password);
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(401).json(error('Invalid credentials', 401));
+    }
+
+    // Check role if provided
+    if (role && user.role !== role) {
+      return res.status(401).json(error('Invalid credentials', 401));
+    }
     
     // Generate token
     const token = generateToken(user);

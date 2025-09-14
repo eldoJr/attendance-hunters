@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportUtils';
 import { useAppStore } from '../../store';
-import { MOCK_STUDENTS, COURSES } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 interface Student {
   id: string;
@@ -50,9 +50,27 @@ export const LeaderboardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('All');
   const [selectedPeriod, setSelectedPeriod] = useState('Current Semester');
+  const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const { addNotification } = useAppStore();
 
-  const topStudents: Student[] = MOCK_STUDENTS
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [studentsData, coursesData] = await Promise.all([
+          apiService.getStudents(),
+          apiService.getCourses()
+        ]);
+        setStudents(studentsData);
+        setCourses(coursesData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+    loadData();
+  }, []);
+
+  const topStudents: Student[] = students
     .filter(s => s.status === 'Active' && s.attendance)
     .sort((a, b) => (b.attendance || 0) - (a.attendance || 0))
     .slice(0, 20)
@@ -61,7 +79,7 @@ export const LeaderboardPage: React.FC = () => {
       rank: index + 1,
       name: student.name,
       studentId: student.studentId || student.rollNumber,
-      class: student.course,
+      class: student.class || 'General',
       attendance: student.attendance || 0,
       streak: Math.floor((student.attendance || 0) / 2) + Math.floor(Math.random() * 10),
       badges: Math.floor((student.attendance || 0) / 15) + Math.floor(Math.random() * 3),
@@ -134,7 +152,7 @@ export const LeaderboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Participants</p>
-                  <div className="text-2xl font-bold text-primary">{MOCK_STUDENTS.filter(s => s.status === 'Active').length}</div>
+                  <div className="text-2xl font-bold text-primary">{students.filter(s => s.status === 'Active').length}</div>
                 </div>
                 <Users className="h-5 w-5 text-primary" />
               </div>
@@ -158,7 +176,7 @@ export const LeaderboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Average Score</p>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{Math.round(MOCK_STUDENTS.reduce((acc, s) => acc + (s.attendance || 0), 0) / MOCK_STUDENTS.length)}%</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{students.length > 0 ? Math.round(students.reduce((acc, s) => acc + (s.attendance || 0), 0) / students.length) : 0}%</div>
                 </div>
                 <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
@@ -198,7 +216,7 @@ export const LeaderboardPage: React.FC = () => {
                   onChange={(e) => setSelectedClass(e.target.value)}
                 >
                   <option value="All">All Classes</option>
-                  {COURSES.map(course => (
+                  {courses.map(course => (
                     <option key={course.id} value={course.name}>{course.name}</option>
                   ))}
                 </select>

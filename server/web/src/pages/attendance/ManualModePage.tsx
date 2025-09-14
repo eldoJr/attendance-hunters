@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -6,10 +6,22 @@ import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
 import { Users, Search, Send, Save } from 'lucide-react';
-import { MOCK_STUDENTS } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 export const ManualModePage: React.FC = () => {
-  const [students, setStudents] = useState(MOCK_STUDENTS.map(s => ({ ...s, present: false })));
+  const [students, setStudents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const studentsData = await apiService.getStudents();
+        setStudents(studentsData.map(s => ({ ...s, present: false })));
+      } catch (error) {
+        console.error('Failed to load students:', error);
+      }
+    };
+    loadStudents();
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [rollNumbers, setRollNumbers] = useState('');
   const [showSubmitModal, setShowSubmitModal] = useState(false);

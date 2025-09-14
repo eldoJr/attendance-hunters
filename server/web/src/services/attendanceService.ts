@@ -5,7 +5,7 @@ export const attendanceService = {
   async getAttendanceRecords(): Promise<AttendanceRecord[]> {
     try {
       const response = await apiService.get<AttendanceRecord[]>('/attendance');
-      return response.data;
+      return response.data || [];
     } catch (error) {
       // Fallback to mock data
       return [
@@ -28,7 +28,7 @@ export const attendanceService = {
   async getAttendanceSummary() {
     try {
       const response = await apiService.get('/attendance/summary');
-      return response.data;
+      return response.data || {};
     } catch (error) {
       // Fallback to mock data
       return {

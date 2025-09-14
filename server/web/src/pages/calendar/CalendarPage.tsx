@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -14,14 +14,27 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { MOCK_CALENDAR_EVENTS } from '../../data/mockCalendar';
+import { apiService } from '../../services/api';
 
 export const CalendarPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [activeTab, setActiveTab] = useState('events');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
 
-  const filteredEvents = MOCK_CALENDAR_EVENTS.filter(event => 
+  useEffect(() => {
+    const loadCalendarEvents = async () => {
+      try {
+        const events = await apiService.getCalendarEvents();
+        setCalendarEvents(events);
+      } catch (error) {
+        console.error('Failed to load calendar events:', error);
+      }
+    };
+    loadCalendarEvents();
+  }, []);
+
+  const filteredEvents = calendarEvents.filter(event => 
     selectedFilter === 'All' || event.type === selectedFilter
   );
 
@@ -60,7 +73,7 @@ export const CalendarPage: React.FC = () => {
 
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return MOCK_CALENDAR_EVENTS.filter(event => event.date === dateStr);
+    return calendarEvents.filter(event => event.date === dateStr);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -93,7 +106,7 @@ export const CalendarPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Events</p>
-                  <div className="text-2xl font-bold text-blue-600 mt-1">{MOCK_CALENDAR_EVENTS.length}</div>
+                  <div className="text-2xl font-bold text-blue-600 mt-1">{calendarEvents.length}</div>
                 </div>
                 <CalendarIcon className="h-5 w-5 text-blue-600" />
               </div>
@@ -106,7 +119,7 @@ export const CalendarPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Upcoming Exams</p>
                   <div className="text-2xl font-bold text-red-600 mt-1">
-                    {MOCK_CALENDAR_EVENTS.filter(e => e.type === 'Exam' && new Date(e.date) >= new Date()).length}
+                    {calendarEvents.filter(e => e.type === 'exam' && new Date(e.date) >= new Date()).length}
                   </div>
                 </div>
                 <BookOpen className="h-5 w-5 text-red-600" />
@@ -120,7 +133,7 @@ export const CalendarPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">This Week</p>
                   <div className="text-2xl font-bold text-green-600 mt-1">
-                    {MOCK_CALENDAR_EVENTS.filter(e => {
+                    {calendarEvents.filter(e => {
                       const eventDate = new Date(e.date);
                       const today = new Date();
                       const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -139,7 +152,7 @@ export const CalendarPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Departments</p>
                   <div className="text-2xl font-bold text-purple-600 mt-1">
-                    {new Set(MOCK_CALENDAR_EVENTS.map(e => e.department)).size}
+                    {new Set(calendarEvents.map(e => e.course)).size}
                   </div>
                 </div>
                 <Users className="h-5 w-5 text-purple-600" />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -9,17 +9,40 @@ import { QrCode, UserCheck, Users, UserX, Clock, Search, Filter, Download, Edit,
 import { TakeAttendanceModal } from '../../components/modals/TakeAttendanceModal';
 import { exportToExcel } from '../../utils/exportUtils';
 import { useAppStore } from '../../store';
-import { ATTENDANCE_RECORDS } from '../../data/mockStudents';
+import { apiService } from '../../services/api';
 
 export const AttendancePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
 
   const { addNotification } = useAppStore();
   
-  const attendanceRecords = ATTENDANCE_RECORDS;
+  useEffect(() => {
+    const loadAttendanceRecords = async () => {
+      try {
+        const records = await apiService.getAttendanceRecords();
+        setAttendanceRecords(records);
+      } catch (error) {
+        console.error('Failed to load attendance records:', error);
+        setAttendanceRecords(getFallbackAttendanceRecords());
+      }
+    };
+    loadAttendanceRecords();
+  }, []);
+
+  const getFallbackAttendanceRecords = () => {
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i + 1,
+      student: `Student ${i + 1}`,
+      class: `Class ${Math.floor(i / 5) + 1}`,
+      date: new Date().toLocaleDateString(),
+      time: `${9 + (i % 8)}:00 AM`,
+      status: ['present', 'absent', 'late'][i % 3]
+    }));
+  };
 
   const filteredRecords = attendanceRecords.filter(record => 
     record.student.toLowerCase().includes(searchTerm.toLowerCase()) ||

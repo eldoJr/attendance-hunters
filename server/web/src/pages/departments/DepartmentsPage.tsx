@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -20,15 +20,28 @@ import {
 } from 'lucide-react';
 import { exportToExcel } from '../../utils/exportUtils';
 import { useAppStore } from '../../store';
-import { MOCK_DEPARTMENTS } from '../../data/mockDepartments';
+import { apiService } from '../../services/api';
 
 export const DepartmentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<any[]>([]);
   const { addNotification } = useAppStore();
 
-  const filteredDepartments = MOCK_DEPARTMENTS.filter(dept => {
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const deptData = await apiService.getDepartments();
+        setDepartments(deptData);
+      } catch (error) {
+        console.error('Failed to load departments:', error);
+      }
+    };
+    loadDepartments();
+  }, []);
+
+  const filteredDepartments = departments.filter(dept => {
     const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          dept.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          dept.head.toLowerCase().includes(searchTerm.toLowerCase());
@@ -97,7 +110,7 @@ export const DepartmentsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Departments</p>
-                  <div className="text-3xl font-bold text-primary mt-2">{MOCK_DEPARTMENTS.length}</div>
+                  <div className="text-3xl font-bold text-primary mt-2">{departments.length}</div>
                   <p className="text-xs text-muted-foreground mt-1">academic departments</p>
                 </div>
                 <div className="p-3 bg-primary/10 rounded-full">
@@ -113,7 +126,7 @@ export const DepartmentsPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Technology Depts</p>
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                    {MOCK_DEPARTMENTS.filter(d => d.type === 'Technology').length}
+                    {departments.filter(d => d.type === 'Technology').length}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">tech-focused</p>
                 </div>
@@ -130,7 +143,7 @@ export const DepartmentsPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Faculty</p>
                   <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                    {MOCK_DEPARTMENTS.reduce((acc, d) => acc + d.faculty, 0)}
+                    {departments.reduce((acc, d) => acc + d.faculty, 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">across all departments</p>
                 </div>
@@ -147,7 +160,7 @@ export const DepartmentsPage: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Students</p>
                   <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">
-                    {MOCK_DEPARTMENTS.reduce((acc, d) => acc + d.students, 0)}
+                    {departments.reduce((acc, d) => acc + d.students, 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">enrolled students</p>
                 </div>
