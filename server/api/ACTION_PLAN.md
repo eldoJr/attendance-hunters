@@ -46,7 +46,7 @@ server/api/
 - [x] `PUT /api/users/:id` - Update user
 - [x] `DELETE /api/users/:id` - Delete user (admin only)
 
-## Phase 3: Core Entities CRUD (Day 5-7)
+## Phase 3: Core Entities CRUD (Day 5-7) ✅ COMPLETED
 
 ### 3.1 Departments API ✅
 - [x] `GET /api/departments` - List all departments
@@ -55,26 +55,26 @@ server/api/
 - [x] `PUT /api/departments/:id` - Update department (admin)
 - [x] `DELETE /api/departments/:id` - Delete department (admin)
 
-### 3.2 Faculty API
-- [ ] `GET /api/faculty` - List faculty
-- [ ] `GET /api/faculty/:id` - Get faculty details
-- [ ] `POST /api/faculty` - Create faculty (admin)
-- [ ] `PUT /api/faculty/:id` - Update faculty
-- [ ] `DELETE /api/faculty/:id` - Delete faculty (admin)
-- [ ] `GET /api/faculty/:id/classes` - Get faculty classes
+### 3.2 Faculty API ✅
+- [x] `GET /api/faculty` - List faculty
+- [x] `GET /api/faculty/:id` - Get faculty details
+- [x] `POST /api/faculty` - Create faculty (admin)
+- [x] `PUT /api/faculty/:id` - Update faculty
+- [x] `DELETE /api/faculty/:id` - Delete faculty (admin)
+- [x] `GET /api/faculty/:id/classes` - Get faculty classes
 
-### 3.3 Students API
-- [ ] `GET /api/students` - List students
-- [ ] `GET /api/students/:id` - Get student details
-- [ ] `POST /api/students` - Create student (admin)
-- [ ] `PUT /api/students/:id` - Update student
-- [ ] `DELETE /api/students/:id` - Delete student (admin)
-- [ ] `GET /api/students/:id/classes` - Get student enrollments
-- [ ] `GET /api/students/:id/attendance` - Get attendance records
+### 3.3 Students API ✅
+- [x] `GET /api/students` - List students
+- [x] `GET /api/students/:id` - Get student details
+- [x] `POST /api/students` - Create student (admin)
+- [x] `PUT /api/students/:id` - Update student
+- [x] `DELETE /api/students/:id` - Delete student (admin)
+- [x] `GET /api/students/:id/classes` - Get student enrollments
+- [x] `GET /api/students/:id/attendance` - Get attendance records
 
-### 3.4 Courses & Classes API
-- [ ] `GET /api/courses` - List courses
-- [ ] `POST /api/courses` - Create course (admin)
+### 3.4 Courses & Classes API 🚧
+- [x] `GET /api/courses` - List courses
+- [x] `POST /api/courses` - Create course (admin)
 - [ ] `GET /api/classes` - List classes
 - [ ] `GET /api/classes/:id` - Get class details
 - [ ] `POST /api/classes` - Create class (faculty/admin)
