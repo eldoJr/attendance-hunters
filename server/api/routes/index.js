@@ -5,6 +5,8 @@ const departmentRoutes = require('./departments');
 const facultyRoutes = require('./faculty');
 const studentRoutes = require('./students');
 const courseRoutes = require('./courses');
+const classRoutes = require('./classes');
+const attendanceRoutes = require('./attendance');
 
 const router = express.Router();
 
@@ -24,5 +26,7 @@ router.use('/departments', departmentRoutes);
 router.use('/faculty', facultyRoutes);
 router.use('/students', studentRoutes);
 router.use('/courses', courseRoutes);
+router.use('/classes', classRoutes);
+router.use('/attendance', attendanceRoutes);
 
 module.exports = router;
