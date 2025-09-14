@@ -1,0 +1,375 @@
+// Prisma schema for Attendance Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student Student?
+  faculty Faculty?
+  reports Report[]
+
+  @@map("users")
+}
+
+model Department {
+  id             String          @id @default(uuid())
+  name           String
+  code           String          @unique
+  head           String?
+  email          String?
+  phone          String?
+  type           DepartmentType
+  facultyCount   Int             @default(0) @map("faculty_count")
+  studentCount   Int             @default(0) @map("student_count")
+  programsCount  Int             @default(0) @map("programs_count")
+  status         DepartmentStatus @default(Active)
+  established    Int?
+  building       String?
+  description    String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  faculty        Faculty[]
+  students       Student[]
+  courses        Course[]
+  classes        Class[]
+  calendarEvents CalendarEvent[]
+
+  @@map("departments")
+}
+
+model Faculty {
+  id                String       @id @default(uuid())
+  employeeId        String       @unique @map("employee_id")
+  userId            String?      @unique @map("user_id")
+  departmentId      String?      @map("department_id")
+  designation       Designation?
+  specialization    Json?
+  qualifications    Json?
+  experienceYears   Int?         @map("experience_years")
+  joinDate          DateTime?    @map("join_date")
+  status            FacultyStatus @default(active)
+  officeRoom        String?      @map("office_room")
+  researchAreas     Json?        @map("research_areas")
+  publicationsCount Int          @default(0) @map("publications_count")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  user              User?        @relation(fields: [userId], references: [id])
+  department        Department?  @relation(fields: [departmentId], references: [id])
+  classes           Class[]
+  attendanceSessions AttendanceSession[]
+  attendanceRecords AttendanceRecord[]
+
+  @@map("faculty")
+}
+
+model Student {
+  id               String        @id @default(uuid())
+  userId           String?       @unique @map("user_id")
+  rollNumber       String        @unique @map("roll_number")
+  enrollmentNumber String        @unique @map("enrollment_number")
+  departmentId     String?       @map("department_id")
+  year             Int?
+  section          String?
+  status           StudentStatus @default(Active)
+  enrollmentDate   DateTime?     @map("enrollment_date")
+  phone            String?
+  gpa              Decimal?      @db.Decimal(3, 2)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user             User?         @relation(fields: [userId], references: [id])
+  department       Department?   @relation(fields: [departmentId], references: [id])
+  enrollments      StudentEnrollment[]
+  attendanceRecords AttendanceRecord[]
+
+  @@map("students")
+}
+
+model Course {
+  id            String       @id @default(uuid())
+  departmentId  String?      @map("department_id")
+  name          String
+  code          String       @unique
+  credits       Int?
+  description   String?
+  prerequisites Json?
+  level         CourseLevel?
+  category      CourseCategory?
+  status        CourseStatus @default(active)
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  classes       Class[]
+
+  @@map("courses")
+}
+
+model Class {
+  id                String    @id @default(uuid())
+  courseId          String?   @map("course_id")
+  facultyId         String?   @map("faculty_id")
+  departmentId      String?   @map("department_id")
+  name              String
+  code              String?
+  section           String?
+  semester          String?
+  academicYear      String?   @map("academic_year")
+  maxCapacity       Int?      @map("max_capacity")
+  currentEnrollment Int       @default(0) @map("current_enrollment")
+  room              String?
+  status            ClassStatus @default(active)
+  startDate         DateTime? @map("start_date")
+  endDate           DateTime? @map("end_date")
+  credits           Int?
+  description       String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  course            Course?   @relation(fields: [courseId], references: [id])
+  faculty           Faculty?  @relation(fields: [facultyId], references: [id])
+  department        Department? @relation(fields: [departmentId], references: [id])
+  schedules         ClassSchedule[]
+  enrollments       StudentEnrollment[]
+  attendanceSessions AttendanceSession[]
+  attendanceRecords AttendanceRecord[]
+  reports           Report[]
+
+  @@map("classes")
+}
+
+model ClassSchedule {
+  id        String   @id @default(uuid())
+  classId   String   @map("class_id")
+  dayOfWeek Int      @map("day_of_week")
+  startTime DateTime @map("start_time") @db.Time
+  endTime   DateTime @map("end_time") @db.Time
+  room      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  class     Class    @relation(fields: [classId], references: [id])
+
+  @@map("class_schedules")
+}
+
+model StudentEnrollment {
+  id             String           @id @default(uuid())
+  studentId      String           @map("student_id")
+  classId        String           @map("class_id")
+  enrollmentDate DateTime?        @map("enrollment_date")
+  status         EnrollmentStatus @default(enrolled)
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  student        Student          @relation(fields: [studentId], references: [id])
+  class          Class            @relation(fields: [classId], references: [id])
+
+  @@unique([studentId, classId], name: "unique_enrollment")
+  @@map("student_enrollments")
+}
+
+model AttendanceSession {
+  id                   String            @id @default(uuid())
+  classId              String            @map("class_id")
+  facultyId            String            @map("faculty_id")
+  date                 DateTime          @db.Date
+  startTime            DateTime          @map("start_time") @db.Time
+  endTime              DateTime          @map("end_time") @db.Time
+  status               SessionStatus     @default(active)
+  totalStudents        Int?              @map("total_students")
+  presentCount         Int               @default(0) @map("present_count")
+  absentCount          Int               @default(0) @map("absent_count")
+  lateCount            Int               @default(0) @map("late_count")
+  attendancePercentage Decimal?          @map("attendance_percentage") @db.Decimal(5, 2)
+  createdAt            DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  class                Class             @relation(fields: [classId], references: [id])
+  faculty              Faculty           @relation(fields: [facultyId], references: [id])
+  attendanceRecords    AttendanceRecord[]
+
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id           String            @id @default(uuid())
+  studentId    String            @map("student_id")
+  classId      String            @map("class_id")
+  facultyId    String            @map("faculty_id")
+  sessionId    String            @map("session_id")
+  date         DateTime          @db.Date
+  status       AttendanceStatus?
+  checkInTime  DateTime?         @map("check_in_time") @db.Time
+  checkOutTime DateTime?         @map("check_out_time") @db.Time
+  method       AttendanceMethod?
+  location     String?
+  notes        String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  student      Student           @relation(fields: [studentId], references: [id])
+  class        Class             @relation(fields: [classId], references: [id])
+  faculty      Faculty           @relation(fields: [facultyId], references: [id])
+  session      AttendanceSession @relation(fields: [sessionId], references: [id])
+
+  @@map("attendance_records")
+}
+
+model CalendarEvent {
+  id           String        @id @default(uuid())
+  title        String
+  description  String?
+  date         DateTime      @db.Date
+  time         DateTime?     @db.Time
+  location     String?
+  type         EventType
+  departmentId String?       @map("department_id")
+  duration     String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  department   Department?   @relation(fields: [departmentId], references: [id])
+
+  @@map("calendar_events")
+}
+
+model Report {
+  id                   String       @id @default(uuid())
+  type                 String?
+  classId              String?      @map("class_id")
+  period               String?
+  attendancePercentage Decimal?     @map("attendance_percentage") @db.Decimal(5, 2)
+  studentCount         Int?         @map("student_count")
+  generatedDate        DateTime?    @map("generated_date") @db.Date
+  status               ReportStatus @default(Processing)
+  filePath             String?      @map("file_path")
+  createdBy            String?      @map("created_by")
+  createdAt            DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  class                Class?       @relation(fields: [classId], references: [id])
+  creator              User?        @relation(fields: [createdBy], references: [id])
+
+  @@map("reports")
+}
+
+// Enums
+enum Role {
+  student
+  staff
+  admin
+}
+
+enum DepartmentType {
+  Technology
+  Engineering
+  Science
+}
+
+enum DepartmentStatus {
+  Active
+  Inactive
+}
+
+enum Designation {
+  Professor
+  Associate_Professor @map("Associate Professor")
+  Assistant_Professor @map("Assistant Professor")
+  Lecturer
+  Lab_Instructor @map("Lab Instructor")
+}
+
+enum FacultyStatus {
+  active
+  inactive
+  on_leave
+}
+
+enum StudentStatus {
+  Active
+  Inactive
+  Suspended
+}
+
+enum CourseLevel {
+  undergraduate
+  graduate
+}
+
+enum CourseCategory {
+  core
+  elective
+  lab
+}
+
+enum CourseStatus {
+  active
+  inactive
+}
+
+enum ClassStatus {
+  active
+  inactive
+  completed
+}
+
+enum EnrollmentStatus {
+  enrolled
+  dropped
+  completed
+}
+
+enum SessionStatus {
+  active
+  completed
+  cancelled
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
+
+enum AttendanceMethod {
+  manual
+  qr
+  biometric
+  rfid
+}
+
+enum EventType {
+  Exam
+  Class
+  Holiday
+  Event
+}
+
+enum ReportStatus {
+  Generated
+  Processing
+  Failed
+}

@@ -1,0 +1,18 @@
+{
+  "name": "attendance-database",
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "node setup.js",
+    "seed": "node seed.js",
+    "generate": "prisma generate --schema=prisma/schema.prisma",
+    "push": "prisma db push --schema=prisma/schema.prisma",
+    "studio": "prisma studio --schema=prisma/schema.prisma"
+  },
+  "dependencies": {
+    "pg": "^8.11.3",
+    "@prisma/client": "^5.7.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.1"
+  }
+}

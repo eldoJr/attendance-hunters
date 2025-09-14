@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Prisma generated files
+prisma/migrations/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
