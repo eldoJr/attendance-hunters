@@ -23,9 +23,7 @@ const validateAchievementsQuery = [
 
 // Routes
 router.get('/students', authenticate, validateLeaderboardQuery, handleValidation, getStudentLeaderboard);
-router.get('/departments', authenticate, getD
-
-epartmentRankings);
+router.get('/departments', authenticate, getDepartmentRankings);
 router.get('/achievements', authenticate, validateAchievementsQuery, handleValidation, getAchievements);
 
 module.exports = router;
