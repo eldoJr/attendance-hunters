@@ -65,8 +65,8 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
-              size="sm"
-              className="md:hidden p-2"
+              size="icon"
+              className="md:hidden"
               onClick={onMobileMenuToggle}
             >
               <Menu className="h-5 w-5" />
@@ -105,18 +105,18 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             {/* Mobile Search */}
             <Button 
               variant="ghost" 
-              size="sm" 
-              className="md:hidden p-2"
+              size="icon" 
+              className="md:hidden"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-5 w-5" />
             </Button>
 
             {/* Quick Actions - Admin Only */}
             {user?.role === 'admin' && (
               <DropdownMenu open={quickActionDropdownOpen} onOpenChange={setQuickActionDropdownOpen}>
               <DropdownMenuTrigger 
-                className="hidden sm:inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 md:h-9 px-2 md:px-3"
+                className="hidden sm:inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-11 px-3 min-h-[44px] touch-manipulation"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (quickActionDropdownOpen) {
@@ -173,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             {/* Notifications */}
             <DropdownMenu open={notificationDropdownOpen} onOpenChange={setNotificationDropdownOpen}>
               <DropdownMenuTrigger 
-                className="relative inline-flex items-center justify-center gap-1 md:gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 md:h-9 px-2 md:px-3"
+                className="relative inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-11 px-3 min-h-[44px] touch-manipulation"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (notificationDropdownOpen) {
@@ -247,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             {/* User Menu */}
             <DropdownMenu open={userDropdownOpen} onOpenChange={setUserDropdownOpen}>
               <DropdownMenuTrigger 
-                className="relative inline-flex items-center justify-center rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-8 w-8 md:h-9 md:w-9"
+                className="relative inline-flex items-center justify-center rounded-full text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/80 h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (userDropdownOpen) {
@@ -258,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
                   }
                 }}
               >
-                <Avatar className="h-7 w-7 md:h-8 md:w-8 ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                <Avatar className="h-9 w-9 ring-2 ring-transparent hover:ring-primary/20 transition-all">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 
                      user?.name ? user.name.charAt(0).toUpperCase() : 

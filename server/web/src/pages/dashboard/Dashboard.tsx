@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -7,22 +7,67 @@ import { Progress } from '../../components/ui/progress';
 import { TakeAttendanceModal } from '../../components/modals/TakeAttendanceModal';
 import { TrendingUp, Users, Calendar, AlertTriangle, Plus } from 'lucide-react';
 import { AttendanceChart, ClassPerformanceChart } from '../../components/charts';
-import { useAttendance } from '../../hooks/useAttendance';
-
+import { analyticsService } from '../../services/dataService';
 
 export const Dashboard: React.FC = () => {
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
-  const { summary } = useAttendance();
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await analyticsService.getOverview();
+        if (response.success) {
+          setDashboardData(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        // Use fallback data
+        setDashboardData({
+          todayAttendance: 85,
+          presentStudents: 342,
+          totalStudents: 402,
+          activeClasses: 12,
+          activeCourses: 8,
+          alerts: 5
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4 md:p-6">
+                  <div className="h-20 bg-muted rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, here's what's happening today</p>
+            <h1 className="text-xl md:text-2xl font-semibold text-foreground">Dashboard</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Welcome back, here's what's happening today</p>
           </div>
           <Button 
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
             onClick={() => setIsAttendanceModalOpen(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -31,62 +76,68 @@ export const Dashboard: React.FC = () => {
         </div>
         
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card className="border-l-4 border-l-primary bg-gradient-to-r from-primary/5 to-transparent">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Today's Attendance</p>
-                  <div className="text-3xl font-bold text-primary mt-2">{summary?.todayAttendance || 85}%</div>
+                  <div className="text-2xl md:text-3xl font-bold text-primary mt-2">
+                    {dashboardData?.todayAttendance ? 
+                      Math.round(((dashboardData.todayAttendance.present + dashboardData.todayAttendance.late) / 
+                        (dashboardData.todayAttendance.present + dashboardData.todayAttendance.absent + 
+                         dashboardData.todayAttendance.late + dashboardData.todayAttendance.excused)) * 100) || 0
+                      : 85}%
+                  </div>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">↗ +2% from yesterday</p>
                 </div>
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+                <div className="p-2 md:p-3 bg-primary/10 rounded-full">
+                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 dark:from-blue-950/30 to-transparent">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Present Students</p>
-                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{summary?.presentStudents || 25}</div>
-                  <p className="text-xs text-muted-foreground mt-1">out of {summary?.totalStudents || 28} total</p>
+                  <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{dashboardData?.presentStudents || 342}</div>
+                  <p className="text-xs text-muted-foreground mt-1">out of {dashboardData?.totalStudents || 402} total</p>
                 </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 md:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  <Users className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 dark:from-green-950/30 to-transparent">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Active Classes</p>
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">2</div>
-                  <p className="text-xs text-muted-foreground mt-1">2 active courses</p>
+                  <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{dashboardData?.activeClasses || 12}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{dashboardData?.activeCourses || 8} active courses</p>
                 </div>
-                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <Calendar className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <div className="p-2 md:p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                  <Calendar className="h-5 w-5 md:h-6 md:w-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card className="border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 dark:from-red-950/30 to-transparent">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Alerts</p>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{summary?.alerts || 3}</div>
+                  <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{dashboardData?.alerts || 5}</div>
                   <p className="text-xs text-muted-foreground mt-1">Low attendance warnings</p>
                 </div>
-                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                <div className="p-2 md:p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </CardContent>
@@ -94,7 +145,7 @@ export const Dashboard: React.FC = () => {
         </div>
         
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -136,7 +187,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity & Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2">

@@ -18,18 +18,19 @@ export const StaffDashboard: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Staff Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your classes and track attendance</p>
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight">Staff Dashboard</h1>
+            <p className="text-sm md:text-base text-muted-foreground mt-1">Manage your classes and track attendance</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 w-full sm:w-auto">
             <QrCode className="h-4 w-4" />
-            Generate QR Code
+            <span className="hidden sm:inline">Generate QR Code</span>
+            <span className="sm:hidden">QR Code</span>
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -83,7 +84,7 @@ export const StaffDashboard: React.FC = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
