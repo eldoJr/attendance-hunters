@@ -10,6 +10,9 @@ const attendanceRoutes = require('./attendance');
 const analyticsRoutes = require('./analytics');
 const reportRoutes = require('./reports');
 const leaderboardRoutes = require('./leaderboard');
+const calendarRoutes = require('./calendar');
+const notificationRoutes = require('./notifications');
+const settingsRoutes = require('./settings');
 
 const router = express.Router();
 
@@ -34,5 +37,8 @@ router.use('/attendance', attendanceRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/reports', reportRoutes);
 router.use('/leaderboard', leaderboardRoutes);
+router.use('/calendar', calendarRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/settings', settingsRoutes);
 
 module.exports = router;
