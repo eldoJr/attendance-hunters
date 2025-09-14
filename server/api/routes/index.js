@@ -7,6 +7,9 @@ const studentRoutes = require('./students');
 const courseRoutes = require('./courses');
 const classRoutes = require('./classes');
 const attendanceRoutes = require('./attendance');
+const analyticsRoutes = require('./analytics');
+const reportRoutes = require('./reports');
+const leaderboardRoutes = require('./leaderboard');
 
 const router = express.Router();
 
@@ -28,5 +31,8 @@ router.use('/students', studentRoutes);
 router.use('/courses', courseRoutes);
 router.use('/classes', classRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/reports', reportRoutes);
+router.use('/leaderboard', leaderboardRoutes);
 
 module.exports = router;
