@@ -1,3 +1,4 @@
+require('dotenv').config();
 const prisma = require('./client');
 
 async function seedDatabase() {
