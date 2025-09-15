@@ -7,7 +7,7 @@ import { Progress } from '../../components/ui/progress';
 import { TakeAttendanceModal } from '../../components/modals/TakeAttendanceModal';
 import { TrendingUp, Users, Calendar, AlertTriangle, Plus } from 'lucide-react';
 import { AttendanceChart, ClassPerformanceChart } from '../../components/charts';
-import { analyticsService } from '../../services/dataService';
+import { apiService } from '../../services/api';
 
 export const Dashboard: React.FC = () => {
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
@@ -17,20 +17,36 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const response = await analyticsService.getOverview();
-        if (response.success) {
+        const response = await apiService.get('/dashboard/stats');
+        if (response.success && response.data) {
           setDashboardData(response.data);
+        } else {
+          throw new Error('Failed to fetch dashboard data');
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
         // Use fallback data
         setDashboardData({
-          todayAttendance: 85,
-          presentStudents: 342,
-          totalStudents: 402,
+          todayAttendance: { present: 285, absent: 45, late: 12, excused: 0 },
+          presentStudents: 285,
+          totalStudents: 342,
           activeClasses: 12,
           activeCourses: 8,
-          alerts: 5
+          alerts: 5,
+          weeklyData: [
+            { day: 'Mon', attendance: 92 },
+            { day: 'Tue', attendance: 88 },
+            { day: 'Wed', attendance: 85 },
+            { day: 'Thu', attendance: 90 },
+            { day: 'Fri', attendance: 87 }
+          ],
+          classPerformance: [
+            { class: 'CS101', attendance: 94 },
+            { class: 'MATH201', attendance: 90 },
+            { class: 'ENG101', attendance: 83 },
+            { class: 'PHY101', attendance: 78 }
+          ],
+          recentActivities: []
         });
       } finally {
         setLoading(false);
@@ -156,7 +172,7 @@ export const Dashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AttendanceChart data={[
+              <AttendanceChart data={dashboardData?.weeklyData || [
                 { day: 'Mon', attendance: 92 },
                 { day: 'Tue', attendance: 88 },
                 { day: 'Wed', attendance: 85 },
@@ -176,7 +192,7 @@ export const Dashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ClassPerformanceChart data={[
+              <ClassPerformanceChart data={dashboardData?.classPerformance || [
                 { class: 'CS101', attendance: 94 },
                 { class: 'MATH201', attendance: 90 },
                 { class: 'ENG101', attendance: 83 },

@@ -13,6 +13,7 @@ const leaderboardRoutes = require('./leaderboard');
 const calendarRoutes = require('./calendar');
 const notificationRoutes = require('./notifications');
 const settingsRoutes = require('./settings');
+const dashboardRoutes = require('./dashboard');
 
 const router = express.Router();
 
@@ -40,5 +41,6 @@ router.use('/leaderboard', leaderboardRoutes);
 router.use('/calendar', calendarRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 module.exports = router;
