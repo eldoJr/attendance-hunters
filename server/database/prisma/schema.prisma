@@ -200,6 +200,11 @@ model AttendanceSession {
   location             String?
   notes                String?
   sessionType          String?           @map("session_type")
+  conductedBy          String?           @map("conducted_by")
+  plannedTopic         String?           @map("planned_topic")
+  planningStatus       PlanningStatus?   @map("planning_status")
+  targetLearning       String?           @map("target_learning")
+  tgLevel              String?           @map("tg_level")
   status               SessionStatus     @default(active)
   totalStudents        Int?              @map("total_students")
   presentCount         Int               @default(0) @map("present_count")
@@ -349,6 +354,12 @@ enum SessionStatus {
   active
   completed
   cancelled
+}
+
+enum PlanningStatus {
+  planned
+  in_progress
+  completed
 }
 
 enum AttendanceStatus {

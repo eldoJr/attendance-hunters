@@ -50,6 +50,11 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
   // Additional form fields
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [conductedBy, setConductedBy] = useState('');
+  const [plannedTopic, setPlannedTopic] = useState('');
+  const [planningStatus, setPlanningStatus] = useState('planned');
+  const [targetLearning, setTargetLearning] = useState('');
+  const [tgLevel, setTgLevel] = useState('');
   
   const { addNotification } = useAppStore();
 
@@ -62,16 +67,27 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
       setSelectedMode('');
       setLocation('');
       setNotes('');
+      setConductedBy('');
+      setPlannedTopic('');
+      setPlanningStatus('planned');
+      setTargetLearning('');
+      setTgLevel('');
     }
   }, [isOpen]);
 
-  // Auto-fill location from selected class
+  // Auto-fill location from selected class and conducted by from current user
   useEffect(() => {
     const selectedClassData = classes.find(c => c.id === selectedClass);
     if (selectedClassData?.room && !location) {
       setLocation(selectedClassData.room);
     }
   }, [selectedClass, classes, location]);
+
+  useEffect(() => {
+    if (currentUser?.name && !conductedBy) {
+      setConductedBy(currentUser.name);
+    }
+  }, [currentUser, conductedBy]);
 
   const loadData = async () => {
     try {
@@ -138,6 +154,34 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
     'Quiz',
     'Presentation'
   ];
+
+  const planningStatuses = [
+    { value: 'planned', label: 'Planned' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' }
+  ];
+
+  const tgLevels = [
+    'Beginner',
+    'Intermediate', 
+    'Advanced',
+    '1st Year',
+    '2nd Year',
+    '3rd Year',
+    'Final Year'
+  ];
+
+  // Sample topics - these could come from database
+  const sampleTopics = [
+    'Boolean Algebra',
+    'K-Maps and Logic Simplification',
+    'Sorting Algorithms',
+    'Data Structures - Arrays',
+    'Mathematical Induction',
+    'Digital Logic Gates',
+    'Object-Oriented Programming',
+    'Database Normalization'
+  ];
   
   const attendanceModes = [
     {
@@ -194,7 +238,12 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
         endTime: new Date(Date.now() + 90 * 60000).toTimeString().slice(0, 5),
         location: location || undefined,
         notes: notes || undefined,
-        sessionType: sessionType
+        sessionType: sessionType,
+        conductedBy: conductedBy || undefined,
+        plannedTopic: plannedTopic || undefined,
+        planningStatus: planningStatus,
+        targetLearning: targetLearning || undefined,
+        tgLevel: tgLevel || undefined
       };
 
       const response = await apiService.post<{id: string}>('/attendance/sessions', sessionData);
@@ -251,8 +300,8 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-sm sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden border">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-sm sm:max-w-2xl lg:max-w-4xl min-h-[90vh] sm:min-h-0 sm:max-h-[90vh] overflow-hidden border my-4 sm:my-0">
         {/* Header with Progress */}
         <div className="relative">
           <div className="flex items-center justify-between p-3 sm:p-4 border-b">
@@ -299,7 +348,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
           </div>
         </div>
 
-        <div className="p-3 sm:p-6">
+        <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(90vh-200px)] sm:max-h-none">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -387,6 +436,87 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
                       />
                     </div>
 
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          Conducted By
+                        </label>
+                        <Input 
+                          value={conductedBy}
+                          onChange={(e) => setConductedBy(e.target.value)}
+                          placeholder="Who is conducting this session"
+                          className="text-sm p-3"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          Planned Topic
+                        </label>
+                        <select 
+                          value={plannedTopic} 
+                          onChange={(e) => setPlannedTopic(e.target.value)}
+                          className="w-full p-3 border rounded text-sm focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Select Topic</option>
+                          {sampleTopics.map(topic => (
+                            <option key={topic} value={topic}>{topic}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          Planning Status
+                        </label>
+                        <select 
+                          value={planningStatus} 
+                          onChange={(e) => setPlanningStatus(e.target.value)}
+                          className="w-full p-3 border rounded text-sm focus:ring-2 focus:ring-primary"
+                        >
+                          {planningStatuses.map(status => (
+                            <option key={status.value} value={status.value}>{status.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          Target Level
+                        </label>
+                        <select 
+                          value={tgLevel} 
+                          onChange={(e) => setTgLevel(e.target.value)}
+                          className="w-full p-3 border rounded text-sm focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Select Level</option>
+                          {tgLevels.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        Target Learning
+                      </label>
+                      <textarea 
+                        value={targetLearning}
+                        onChange={(e) => setTargetLearning(e.target.value)}
+                        placeholder="Expected learning outcome of this session..."
+                        className="w-full p-3 border rounded text-sm resize-none focus:ring-2 focus:ring-primary"
+                        rows={2}
+                      />
+                    </div>
+
                     {warnings.length > 0 && (
                       <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded p-3">
                         {warnings.map((warning, idx) => (
@@ -434,7 +564,37 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
                             <p className="text-muted-foreground">Date</p>
                             <p className="font-medium">{new Date().toLocaleDateString()}</p>
                           </div>
+                          {conductedBy && (
+                            <div>
+                              <p className="text-muted-foreground">Conducted By</p>
+                              <p className="font-medium">{conductedBy}</p>
+                            </div>
+                          )}
+                          {plannedTopic && (
+                            <div>
+                              <p className="text-muted-foreground">Planned Topic</p>
+                              <p className="font-medium">{plannedTopic}</p>
+                            </div>
+                          )}
+                          {planningStatus && (
+                            <div>
+                              <p className="text-muted-foreground">Planning Status</p>
+                              <p className="font-medium">{planningStatuses.find(s => s.value === planningStatus)?.label}</p>
+                            </div>
+                          )}
+                          {tgLevel && (
+                            <div>
+                              <p className="text-muted-foreground">TG Level</p>
+                              <p className="font-medium">{tgLevel}</p>
+                            </div>
+                          )}
                         </div>
+                        {targetLearning && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-muted-foreground text-sm">Target Learning</p>
+                            <p className="font-medium text-sm">{targetLearning}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>

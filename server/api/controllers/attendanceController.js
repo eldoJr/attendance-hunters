@@ -10,7 +10,7 @@ const createSession = async (req, res, next) => {
     console.log('Body:', req.body);
     console.log('Looking for faculty with userId:', req.user.id);
     
-    const { classId, date, startTime, endTime, location, notes, sessionType } = req.body;
+    const { classId, date, startTime, endTime, location, notes, sessionType, conductedBy, plannedTopic, planningStatus, targetLearning, tgLevel } = req.body;
     const prisma = getClient();
 
     // Validate required fields
@@ -76,6 +76,11 @@ const createSession = async (req, res, next) => {
         location: location || null,
         notes: notes || null,
         sessionType: sessionType || 'lecture',
+        conductedBy: conductedBy || null,
+        plannedTopic: plannedTopic || null,
+        planningStatus: planningStatus || null,
+        targetLearning: targetLearning || null,
+        tgLevel: tgLevel || null,
         totalStudents: enrollmentCount,
         status: 'active'
       },

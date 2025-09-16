@@ -16,6 +16,7 @@ interface Class {
   department: string | { name: string };
   studentCount: number;
   schedule?: string;
+  faculty?: { user: { name: string } };
 }
 
 interface AttendanceData {
@@ -23,6 +24,11 @@ interface AttendanceData {
   location: string;
   notes: string;
   sessionType: 'lecture' | 'lab' | 'tutorial' | 'exam';
+  conductedBy: string;
+  plannedTopic: string;
+  planningStatus: 'planned' | 'in_progress' | 'completed';
+  targetLearning: string;
+  tgLevel: string;
 }
 
 const TakeAttendancePage: React.FC = () => {
@@ -31,16 +37,35 @@ const TakeAttendancePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({
     classId: '',
     location: '',
     notes: '',
-    sessionType: 'lecture'
+    sessionType: 'lecture',
+    conductedBy: '',
+    plannedTopic: '',
+    planningStatus: 'planned',
+    targetLearning: '',
+    tgLevel: ''
   });
 
   useEffect(() => {
     fetchClasses();
+    fetchCurrentUser();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await apiService.get('/auth/me');
+      if (response.success && response.data) {
+        setCurrentUser(response.data);
+        setAttendanceData(prev => ({ ...prev, conductedBy: (response.data as any).name || '' }));
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -53,7 +78,8 @@ const TakeAttendancePage: React.FC = () => {
           code: cls.code || cls.course?.code || 'N/A',
           department: cls.department?.name || cls.course?.department || 'Unknown Department',
           studentCount: cls.currentEnrollment || cls._count?.enrollments || 0,
-          schedule: cls.schedule || undefined
+          schedule: cls.schedule || undefined,
+          faculty: cls.faculty || undefined
         }));
         setClasses(classesData);
       } else {
@@ -95,15 +121,20 @@ const TakeAttendancePage: React.FC = () => {
         endTime: endTime.toTimeString().slice(0, 8), // HH:MM:SS format
         sessionType: attendanceData.sessionType,
         location: attendanceData.location || null,
-        notes: attendanceData.notes || null
+        notes: attendanceData.notes || null,
+        conductedBy: attendanceData.conductedBy || null,
+        plannedTopic: attendanceData.plannedTopic || null,
+        planningStatus: attendanceData.planningStatus,
+        targetLearning: attendanceData.targetLearning || null,
+        tgLevel: attendanceData.tgLevel || null
       };
       
       console.log('Creating session with payload:', sessionPayload);
       
-      const response = await apiService.createAttendanceSession(sessionPayload);
+      const response = await apiService.post('/attendance/sessions', sessionPayload);
       
       if (response.success) {
-        localStorage.setItem('currentSessionId', response.data?.id || 'temp-session');
+        localStorage.setItem('currentSessionId', (response.data as any)?.id || 'temp-session');
         setStep(4);
       } else {
         console.error('Session creation failed:', response.message);
@@ -229,28 +260,118 @@ const TakeAttendancePage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                Location (Optional)
+                Location
               </label>
               <Input
                 value={attendanceData.location}
                 onChange={(e) => setAttendanceData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="e.g., Room 101, Lab A, Online"
+                placeholder="Enter session location"
                 className="w-full"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                <FileText className="w-4 h-4 inline mr-1" />
-                Notes (Optional)
+                Staff Name
+              </label>
+              <Input
+                value={selectedClass?.faculty?.user?.name || 'Not assigned'}
+                readOnly
+                className="w-full bg-muted/50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Conducted By
+              </label>
+              <Input
+                value={attendanceData.conductedBy}
+                onChange={(e) => setAttendanceData(prev => ({ ...prev, conductedBy: e.target.value }))}
+                placeholder="Who is conducting this session"
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Planned Topic
+              </label>
+              <select
+                value={attendanceData.plannedTopic}
+                onChange={(e) => setAttendanceData(prev => ({ ...prev, plannedTopic: e.target.value }))}
+                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              >
+                <option value="">Select Topic</option>
+                <option value="Boolean Algebra">Boolean Algebra</option>
+                <option value="K-Maps and Logic Simplification">K-Maps and Logic Simplification</option>
+                <option value="Sorting Algorithms">Sorting Algorithms</option>
+                <option value="Data Structures - Arrays">Data Structures - Arrays</option>
+                <option value="Mathematical Induction">Mathematical Induction</option>
+                <option value="Digital Logic Gates">Digital Logic Gates</option>
+                <option value="Object-Oriented Programming">Object-Oriented Programming</option>
+                <option value="Database Normalization">Database Normalization</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Planning Status
+              </label>
+              <select
+                value={attendanceData.planningStatus}
+                onChange={(e) => setAttendanceData(prev => ({ ...prev, planningStatus: e.target.value as AttendanceData['planningStatus'] }))}
+                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              >
+                <option value="planned">Planned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Target Level
+              </label>
+              <select
+                value={attendanceData.tgLevel}
+                onChange={(e) => setAttendanceData(prev => ({ ...prev, tgLevel: e.target.value }))}
+                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              >
+                <option value="">Select Level</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="Final Year">Final Year</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Target Learning
+              </label>
+              <textarea
+                value={attendanceData.targetLearning}
+                onChange={(e) => setAttendanceData(prev => ({ ...prev, targetLearning: e.target.value }))}
+                placeholder="Expected learning outcome of this session..."
+                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground resize-none"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Notes
               </label>
               <textarea
                 value={attendanceData.notes}
                 onChange={(e) => setAttendanceData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Additional notes about this session..."
+                placeholder="Optional session notes..."
+                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground resize-none"
                 rows={3}
-                className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none bg-background text-foreground"
               />
             </div>
           </div>
