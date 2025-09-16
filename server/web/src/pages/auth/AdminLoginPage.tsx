@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Shield, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { useAuth } from '../../hooks/useAuth';
 import { useAppStore } from '../../store';
