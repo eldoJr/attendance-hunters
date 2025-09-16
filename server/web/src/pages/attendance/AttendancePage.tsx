@@ -5,48 +5,107 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { QrCode, UserCheck, Users, UserX, Clock, Search, Filter, Download, Edit, MoreVertical, Eye, History, MessageSquare } from 'lucide-react';
-import { TakeAttendanceModal } from '../../components/modals/TakeAttendanceModal';
+import { QrCode, UserCheck, Users, UserX, Clock, Search, Filter, Download, Edit, MoreVertical, Eye, History, MessageSquare, Calendar } from 'lucide-react';
+
 import { exportToExcel } from '../../utils/exportUtils';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store';
 import { apiService } from '../../services/api';
 
+interface AttendanceRecord {
+  id: string;
+  student: {
+    user: { name: string };
+    rollNumber: string;
+  };
+  class: {
+    name: string;
+    course: { name: string; code: string };
+  };
+  session: {
+    date: string;
+    startTime: string;
+  };
+  status: 'present' | 'absent' | 'late' | 'excused';
+  checkInTime?: string;
+  notes?: string;
+}
+
+interface AttendanceStats {
+  presentToday: number;
+  absentToday: number;
+  lateToday: number;
+  totalStudents: number;
+}
+
 export const AttendancePage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats>({
+    presentToday: 0,
+    absentToday: 0,
+    lateToday: 0,
+    totalStudents: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   const { addNotification } = useAppStore();
   
   useEffect(() => {
-    const loadAttendanceRecords = async () => {
-      try {
-        const records = await apiService.getAttendanceRecords();
-        setAttendanceRecords(records);
-      } catch (error) {
-        console.error('Failed to load attendance records:', error);
-        setAttendanceRecords(getFallbackAttendanceRecords());
-      }
-    };
-    loadAttendanceRecords();
-  }, []);
+    loadAttendanceData();
+  }, [selectedDate]);
 
-  const getFallbackAttendanceRecords = () => {
-    return Array.from({ length: 20 }, (_, i) => ({
-      id: i + 1,
-      student: `Student ${i + 1}`,
-      class: `Class ${Math.floor(i / 5) + 1}`,
-      date: new Date().toLocaleDateString(),
-      time: `${9 + (i % 8)}:00 AM`,
-      status: ['present', 'absent', 'late'][i % 3]
-    }));
+  const loadAttendanceData = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (selectedDate) {
+        params.append('startDate', selectedDate);
+        params.append('endDate', selectedDate);
+      }
+      
+      const response = await apiService.get<{data: AttendanceRecord[], total: number}>(`/attendance/records?${params}`);
+      
+      if (response.success && response.data) {
+        setAttendanceRecords(response.data.data || []);
+        calculateStats(response.data.data || []);
+      } else {
+        addNotification({ message: response.message || 'Failed to load attendance records', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Failed to load attendance records:', error);
+      addNotification({ message: 'Failed to load attendance records', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (records: AttendanceRecord[]) => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecords = records.filter(record => 
+      record.session.date.split('T')[0] === today
+    );
+    
+    const stats = todayRecords.reduce((acc, record) => {
+      switch (record.status) {
+        case 'present': acc.presentToday++; break;
+        case 'absent': acc.absentToday++; break;
+        case 'late': acc.lateToday++; break;
+      }
+      return acc;
+    }, { presentToday: 0, absentToday: 0, lateToday: 0, totalStudents: 0 });
+    
+    stats.totalStudents = stats.presentToday + stats.absentToday + stats.lateToday;
+    setAttendanceStats(stats);
   };
 
   const filteredRecords = attendanceRecords.filter(record => 
-    record.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.class.toLowerCase().includes(searchTerm.toLowerCase())
+    record.student.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    record.class.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    record.class.course.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -61,17 +120,17 @@ export const AttendancePage: React.FC = () => {
             <Button 
               variant="outline" 
               className="border-primary/20 text-primary hover:bg-primary/10"
-              onClick={() => setShowModal(true)}
+              onClick={() => navigate('/attendance/take')}
             >
               <QrCode className="h-4 w-4 mr-2" />
               QR Scanner
             </Button>
             <Button 
               className="bg-primary hover:bg-primary/90"
-              onClick={() => setShowModal(true)}
+              onClick={() => navigate('/attendance/take')}
             >
               <UserCheck className="h-4 w-4 mr-2" />
-              Mark Attendance
+              Take Attendance
             </Button>
           </div>
         </div>
@@ -83,8 +142,8 @@ export const AttendancePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Present Today</p>
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">285</div>
-                  <p className="text-xs text-muted-foreground mt-1">out of 342 total</p>
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{attendanceStats.presentToday}</div>
+                  <p className="text-xs text-muted-foreground mt-1">out of {attendanceStats.totalStudents} total</p>
                 </div>
                 <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
                   <UserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -98,7 +157,7 @@ export const AttendancePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Absent Today</p>
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">45</div>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{attendanceStats.absentToday}</div>
                   <p className="text-xs text-muted-foreground mt-1">requires follow-up</p>
                 </div>
                 <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
@@ -113,7 +172,7 @@ export const AttendancePage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Late Arrivals</p>
-                  <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">12</div>
+                  <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">{attendanceStats.lateToday}</div>
                   <p className="text-xs text-muted-foreground mt-1">within grace period</p>
                 </div>
                 <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
@@ -145,12 +204,16 @@ export const AttendancePage: React.FC = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Input 
-                type="date" 
-                className="sm:max-w-sm"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
+              <div className="relative sm:max-w-sm">
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="date" 
+                  className="pl-10"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  placeholder="Select date"
+                />
+              </div>
               <Button 
                 variant="outline" 
                 className="border-primary/20 text-primary hover:bg-primary/10"
@@ -195,98 +258,72 @@ export const AttendancePage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecords.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">{record.student}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {record.class}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{record.date}</TableCell>
-                      <TableCell className="text-muted-foreground">{record.time}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={
-                            record.status === 'present' 
-                              ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
-                              : record.status === 'absent'
-                              ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
-                              : 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
-                          }
-                        >
-                          {record.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="relative">
-                          <button 
-                            className="h-8 w-8 p-0 hover:bg-muted/80 transition-colors rounded-md flex items-center justify-center border border-transparent hover:border-border"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenDropdown(openDropdown === record.id ? null : record.id);
-                            }}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                          {openDropdown === record.id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenDropdown(null)} />
-                              <div className="absolute right-0 top-8 mt-1 w-48 bg-background border border-border rounded-lg shadow-lg z-50 py-1 animate-in slide-in-from-top-2">
-                                <button 
-                                  onClick={() => setOpenDropdown(null)} 
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left rounded-sm"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  View Profile
-                                </button>
-                                <button 
-                                  onClick={() => setOpenDropdown(null)} 
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left rounded-sm"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  Edit Details
-                                </button>
-                                <button 
-                                  onClick={() => setOpenDropdown(null)} 
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left rounded-sm"
-                                >
-                                  <History className="h-4 w-4" />
-                                  Attendance History
-                                </button>
-                                <button 
-                                  onClick={() => setOpenDropdown(null)} 
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left rounded-sm"
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                  Send Message
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        Loading attendance records...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No attendance records found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRecords.map((record) => (
+                      <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium">
+                          <div>
+                            <div className="font-semibold">{record.student.user.name}</div>
+                            <div className="text-sm text-muted-foreground">{record.student.rollNumber}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{record.class.name}</div>
+                            <div className="text-sm text-muted-foreground">{record.class.course.code}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(record.session.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {record.checkInTime ? new Date(`1970-01-01T${record.checkInTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+                           new Date(`1970-01-01T${record.session.startTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={record.status === 'present' ? 'default' : 
+                                   record.status === 'late' ? 'secondary' : 
+                                   record.status === 'excused' ? 'outline' : 'destructive'}
+                            className={record.status === 'present' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                     record.status === 'late' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                     record.status === 'excused' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                     'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}
+                          >
+                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
             
-            {filteredRecords.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No attendance records found</p>
-                <p className="text-sm">Try adjusting your search criteria</p>
-              </div>
-            )}
+
           </CardContent>
         </Card>
       </div>
-      
-      <TakeAttendanceModal 
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-      />
     </Layout>
   );
 };

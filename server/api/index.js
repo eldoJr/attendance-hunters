@@ -16,7 +16,7 @@ const limiter = rateLimit({
 // Middleware
 app.use(limiter);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'null'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -37,7 +37,37 @@ app.use('*', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  // Don't exit, just log the error
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit, just log the error
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+const server = app.listen(PORT, () => {
   console.log(`🚀 API server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
 });
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
+});
+
+module.exports = app;

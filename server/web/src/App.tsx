@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { AttendancePage } from './pages/attendance/AttendancePage';
+import TakeAttendancePage from './pages/attendance/TakeAttendancePage';
 import { ClassesPage } from './pages/classes/ClassesPage';
 import { StudentsPage } from './pages/students/StudentsPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
@@ -59,6 +60,7 @@ function AppContent() {
               <Route path="/admin" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
               <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
               <Route path={ROUTES.ATTENDANCE} element={<AttendancePage />} />
+              <Route path="/attendance/take" element={<TakeAttendancePage />} />
               <Route path={ROUTES.CLASSES} element={<ClassesPage />} />
               <Route path={ROUTES.STUDENTS} element={<StudentsPage />} />
               <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
@@ -79,6 +81,7 @@ function AppContent() {
               <Route path="/" element={<Navigate to="/staff-dashboard" replace />} />
               <Route path="/staff-dashboard" element={<StaffDashboard />} />
               <Route path={ROUTES.ATTENDANCE} element={<AttendancePage />} />
+              <Route path="/attendance/take" element={<TakeAttendancePage />} />
               <Route path={ROUTES.CLASSES} element={<ClassesPage />} />
               <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
             </>

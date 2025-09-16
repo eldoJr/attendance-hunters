@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "monitor": "node ../monitor.js",
+    "prod": "node ../monitor.js"
   },
   "dependencies": {
     "express": "^4.18.2",

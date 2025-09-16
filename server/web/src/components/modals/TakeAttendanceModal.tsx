@@ -1,40 +1,144 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Progress } from '../ui/progress';
-import { X, QrCode, UserCheck, Zap, Calendar, Clock, Users, BookOpen, ArrowRight, CheckCircle } from 'lucide-react';
+import { X, QrCode, UserCheck, Zap, Calendar, Clock, Users, BookOpen, ArrowRight, CheckCircle, User, MapPin, FileText, Timer, AlertCircle } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useAppStore } from '../../store';
 
 interface TakeAttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: 'scanner' | 'attendance';
 }
 
-export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen, onClose, initialMode = 'attendance' }) => {
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSection, setSelectedSection] = useState('');
-  const [sessionType, setSessionType] = useState('');
+interface Class {
+  id: string;
+  name: string;
+  code?: string;
+  course?: { name: string; code: string };
+  currentEnrollment: number;
+  room?: string;
+  maxCapacity?: number;
+  faculty?: { user: { name: string } };
+  schedules?: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    room?: string;
+  }>;
+}
+
+interface User {
+  id: string;
+  name: string;
+  role: string;
+  email?: string;
+}
+
+export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen, onClose }) => {
+  const [selectedClass, setSelectedClass] = useState('');
+  const [sessionType, setSessionType] = useState('Lecture');
   const [selectedMode, setSelectedMode] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
-  const [courses, setCourses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Additional form fields
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
+  
+  const { addNotification } = useAppStore();
 
   useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        const coursesData = await apiService.getCourses();
-        setCourses(coursesData);
-      } catch (error) {
-        console.error('Failed to load courses:', error);
-      }
-    };
-    loadCourses();
-  }, []);
-  const sections = ['A', 'B', 'C', 'D'];
-  const sessionTypes = ['Lecture', 'Lab', 'Tutorial', 'Seminar'];
+    if (isOpen) {
+      loadData();
+      setCurrentStep(1);
+      setSelectedClass('');
+      setSessionType('Lecture');
+      setSelectedMode('');
+      setLocation('');
+      setNotes('');
+    }
+  }, [isOpen]);
 
+  // Auto-fill location from selected class
+  useEffect(() => {
+    const selectedClassData = classes.find(c => c.id === selectedClass);
+    if (selectedClassData?.room && !location) {
+      setLocation(selectedClassData.room);
+    }
+  }, [selectedClass, classes, location]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      const [classesResponse, userResponse] = await Promise.all([
+        apiService.get<Class[]>('/classes'),
+        apiService.get<User>('/auth/me')
+      ]);
+      
+      if (classesResponse.success && classesResponse.data) {
+        setClasses(classesResponse.data);
+      } else {
+        // Fallback data
+        setClasses([
+          {
+            id: '1',
+            name: 'CS101-A',
+            code: 'CS101',
+            course: { name: 'Introduction to Computer Science', code: 'CS101' },
+            currentEnrollment: 45,
+            maxCapacity: 50,
+            room: 'Room 101',
+            faculty: { user: { name: 'Dr. Smith' } }
+          },
+          {
+            id: '2',
+            name: 'CS201-B', 
+            code: 'CS201',
+            course: { name: 'Data Structures', code: 'CS201' },
+            currentEnrollment: 38,
+            maxCapacity: 45,
+            room: 'Room 205',
+            faculty: { user: { name: 'Dr. Johnson' } }
+          }
+        ]);
+      }
+      
+      if (userResponse.success && userResponse.data) {
+        setCurrentUser(userResponse.data);
+      } else {
+        setCurrentUser({
+          id: '1',
+          name: 'Dr. John Smith',
+          role: 'staff',
+          email: 'john.smith@university.edu'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      addNotification({ message: 'Failed to load data', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sessionTypes = [
+    'Lecture',
+    'Lab',
+    'Tutorial', 
+    'Seminar',
+    'Workshop',
+    'Exam',
+    'Quiz',
+    'Presentation'
+  ];
+  
   const attendanceModes = [
     {
       id: 'qr',
@@ -42,8 +146,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
       description: 'Students scan QR code with their mobile devices',
       icon: QrCode,
       color: 'blue',
-      features: ['Real-time scanning', 'Mobile app required', 'Automatic marking'],
-      route: '/attendance/qr-mode'
+      features: ['Real-time scanning', 'Mobile app required', 'Automatic marking']
     },
     {
       id: 'manual',
@@ -51,8 +154,7 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
       description: 'Mark attendance manually from student list',
       icon: UserCheck,
       color: 'green',
-      features: ['Full control', 'No mobile app needed', 'Bulk operations'],
-      route: '/attendance/manual-mode'
+      features: ['Full control', 'No mobile app needed', 'Bulk operations']
     },
     {
       id: 'hybrid',
@@ -60,16 +162,15 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
       description: 'Combine QR scanning with manual adjustments',
       icon: Zap,
       color: 'purple', 
-      features: ['Best of both worlds', 'Flexible workflow', 'Review & edit'],
-      route: '/attendance/hybrid-mode'
+      features: ['Best of both worlds', 'Flexible workflow', 'Review & edit']
     }
   ];
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
-  }, [currentStep]);
+  };
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -77,54 +178,90 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
     }
   };
 
-  const handleProceed = () => {
-    if (!selectedCourse || !selectedSection || !sessionType || !selectedMode) return;
-    
-    const selectedModeData = attendanceModes.find(mode => mode.id === selectedMode);
-    if (selectedModeData) {
+  const handleProceed = async () => {
+    if (!selectedClass || !sessionType || !selectedMode) {
+      addNotification({ message: 'Please fill in all required fields', type: 'error' });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
       const sessionData = {
-        courseId: selectedCourse,
-        section: selectedSection,
-        sessionType,
-        timestamp: Date.now(),
-        courseName: Array.isArray(courses) ? courses.find(c => c.id === selectedCourse)?.name : 'Unknown Course'
+        classId: selectedClass,
+        date: new Date().toISOString().split('T')[0],
+        startTime: new Date().toTimeString().slice(0, 5),
+        endTime: new Date(Date.now() + 90 * 60000).toTimeString().slice(0, 5),
+        location: location || undefined,
+        notes: notes || undefined,
+        sessionType: sessionType
       };
-      localStorage.setItem('attendanceSession', JSON.stringify(sessionData));
-      window.location.href = selectedModeData.route;
+
+      const response = await apiService.post<{id: string}>('/attendance/sessions', sessionData);
+      
+      if (response.success && response.data) {
+        addNotification({ message: 'Attendance session created successfully', type: 'success' });
+        onClose();
+        // Navigate based on selected mode
+        window.location.href = `/attendance/${selectedMode}/${response.data.id}`;
+      } else {
+        addNotification({ message: response.message || 'Failed to create session', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      addNotification({ message: 'Failed to create session', type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const canProceedStep1 = selectedCourse && selectedSection && sessionType;
+  const selectedClassData = classes.find(c => c.id === selectedClass);
+  const canProceedStep1 = selectedClass && sessionType;
   const canProceedStep3 = selectedMode;
-
-  useEffect(() => {
-    if (selectedCourse && selectedSection && sessionType && currentStep === 1) {
-      setTimeout(() => handleNext(), 300);
+  
+  // Memoized filtered classes for better performance
+  const filteredClasses = useMemo(() => {
+    // Admin can see all classes, staff only classes with students
+    if (currentUser?.role === 'admin') {
+      return classes;
     }
-  }, [selectedCourse, selectedSection, sessionType, currentStep, handleNext]);
-
-  const selectedCourseData = Array.isArray(courses) ? courses.find(c => c.id === selectedCourse) : null;
-
-  if (!isOpen) return null;
-
+    return classes.filter(cls => cls.currentEnrollment > 0);
+  }, [classes, currentUser?.role]);
+  
+  // Validation warnings
+  const warnings = useMemo(() => {
+    const warns = [];
+    if (selectedClassData) {
+      if (selectedClassData.currentEnrollment === 0) {
+        warns.push('This class has no enrolled students');
+      }
+      if (selectedClassData.maxCapacity && selectedClassData.currentEnrollment > selectedClassData.maxCapacity) {
+        warns.push('Class is over capacity');
+      }
+    }
+    return warns;
+  }, [selectedClassData]);
+  
   const stepTitles = [
-    'Course & Session Details',
-    'Session Overview',
+    'Class & Session Details',
+    'Session Overview', 
     'Choose Attendance Mode'
   ];
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-      <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden border">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-background rounded-lg shadow-xl w-full max-w-sm sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden border">
         {/* Header with Progress */}
         <div className="relative">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <div>
-                <h2 className="text-lg font-semibold">Setup Attendance Session</h2>
-                <p className="text-xs text-muted-foreground">
-                  {new Date().toLocaleDateString()} • {new Date().toLocaleTimeString()}
+                <h2 className="text-base sm:text-lg font-semibold">Setup Attendance</h2>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  {new Date().toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -134,255 +271,265 @@ export const TakeAttendanceModal: React.FC<TakeAttendanceModalProps> = ({ isOpen
           </div>
           
           {/* Progress Steps */}
-          <div className="px-4 py-3 bg-muted/20">
-            <div className="flex items-center justify-between mb-2">
+          <div className="px-3 sm:px-4 py-2 sm:py-3 bg-muted/20">
+            <div className="flex items-center justify-center sm:justify-between mb-2">
               {stepTitles.map((title, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                <div key={index} className="flex items-center gap-1 sm:gap-2">
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                     currentStep > index + 1 ? 'bg-green-500 text-white' :
                     currentStep === index + 1 ? 'bg-primary text-primary-foreground' :
                     'bg-muted text-muted-foreground'
                   }`}>
-                    {currentStep > index + 1 ? <CheckCircle className="h-3 w-3" /> : index + 1}
+                    {currentStep > index + 1 ? <CheckCircle className="h-2 w-2 sm:h-3 sm:w-3" /> : index + 1}
                   </div>
-                  <span className={`text-xs font-medium ${
+                  <span className={`text-xs font-medium hidden sm:inline ${
                     currentStep === index + 1 ? 'text-foreground' : 'text-muted-foreground'
                   }`}>
                     {title}
                   </span>
                   {index < stepTitles.length - 1 && (
-                    <div className={`w-12 h-0.5 mx-2 ${
+                    <div className={`w-4 sm:w-12 h-0.5 mx-1 sm:mx-2 ${
                       currentStep > index + 1 ? 'bg-green-500' : 'bg-muted'
                     }`} />
                   )}
                 </div>
               ))}
             </div>
-            <Progress value={(currentStep / 3) * 100} className="h-1.5" />
+            <Progress value={(currentStep / 3) * 100} className="h-1 sm:h-1.5" />
           </div>
         </div>
 
-        <div className="p-6">
-          {/* Step 1: Course Selection */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold mb-1">Select Course & Session Details</h3>
-                <p className="text-muted-foreground text-sm">Choose the course and configure your attendance session</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    Course
-                  </label>
-                  <select 
-                    value={selectedCourse} 
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background text-sm"
-                  >
-                    <option value="">Select Course</option>
-                    {Array.isArray(courses) && courses.map(course => (
-                      <option key={course.id} value={course.id}>
-                        {course.name} ({course.students} students)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Section
-                  </label>
-                  <select 
-                    value={selectedSection} 
-                    onChange={(e) => setSelectedSection(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background text-sm disabled:opacity-50"
-                    disabled={!selectedCourse}
-                  >
-                    <option value="">Select Section</option>
-                    {sections.map(section => (
-                      <option key={section} value={section}>Section {section}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Session Type
-                  </label>
-                  <select 
-                    value={sessionType} 
-                    onChange={(e) => setSessionType(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background text-sm disabled:opacity-50"
-                    disabled={!selectedCourse}
-                  >
-                    <option value="">Select Type</option>
-                    {sessionTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date & Time</label>
-                  <Input 
-                    value={new Date().toLocaleString()} 
-                    readOnly 
-                    className="p-3 bg-muted/50 border rounded-lg text-sm" 
-                  />
-                </div>
-              </div>
-
-              {canProceedStep1 && (
-                <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div>
-                      <h4 className="font-medium text-green-800 dark:text-green-300">Ready to proceed</h4>
-                      <p className="text-sm text-green-600 dark:text-green-400">All required fields completed</p>
+        <div className="p-3 sm:p-6">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-sm text-muted-foreground mt-2">Loading...</p>
+            </div>
+          ) : (
+            <>
+              {/* Step 1: Class Selection */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  {currentUser && (
+                    <div className="bg-muted/20 rounded p-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium">Instructor:</span>
+                        <span className="text-xs">{currentUser.name}</span>
+                        <Badge variant="outline" className="text-xs px-1 py-0">{currentUser.role}</Badge>
+                        {currentUser.email && (
+                          <span className="text-xs text-muted-foreground">({currentUser.email})</span>
+                        )}
+                      </div>
                     </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <BookOpen className="h-4 w-4" />
+                        Class <span className="text-red-500">*</span>
+                      </label>
+                      <select 
+                        value={selectedClass} 
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                        className="w-full p-3 border rounded text-sm focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select Class</option>
+                        {filteredClasses.map(cls => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.course?.name || cls.name} ({cls.currentEnrollment} students)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        Session Type <span className="text-red-500">*</span>
+                      </label>
+                      <select 
+                        value={sessionType} 
+                        onChange={(e) => setSessionType(e.target.value)}
+                        className="w-full p-3 border rounded text-sm focus:ring-2 focus:ring-primary"
+                      >
+                        {sessionTypes.map(type => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        Location
+                      </label>
+                      <Input 
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder={selectedClassData?.room || "Enter location"}
+                        className="text-sm p-3"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-1">
+                        <FileText className="h-4 w-4" />
+                        Notes
+                      </label>
+                      <textarea 
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Optional session notes..."
+                        className="w-full p-3 border rounded text-sm resize-none focus:ring-2 focus:ring-primary"
+                        rows={3}
+                      />
+                    </div>
+
+                    {warnings.length > 0 && (
+                      <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded p-3">
+                        {warnings.map((warning, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
+                            <AlertCircle className="h-4 w-4" />
+                            {warning}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </Card>
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Step 2: Session Overview */}
-          {currentStep === 2 && selectedCourseData && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold mb-1">Session Overview</h3>
-                <p className="text-muted-foreground text-sm">Review your session details before proceeding</p>
-              </div>
-              
-              <Card className="p-4 bg-primary/5 border-primary/20">
-                <div className="flex items-start gap-3">
-                  <BookOpen className="h-5 w-5 text-primary mt-1" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{selectedCourseData.name}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Department</p>
-                        <p className="font-medium">{selectedCourseData.department}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Section</p>
-                        <p className="font-medium">Section {selectedSection}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Session Type</p>
-                        <p className="font-medium">{sessionType}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Students</p>
-                        <p className="font-medium">{selectedCourseData.students} enrolled</p>
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="bg-primary/10 text-primary">
-                    Ready
-                  </Badge>
-                </div>
-              </Card>
-
-
-            </div>
-          )}
-
-          {/* Step 3: Attendance Mode Selection */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold mb-1">Choose Attendance Mode</h3>
-                <p className="text-muted-foreground text-sm">Select how you want to take attendance for this session</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {attendanceModes.map((mode) => {
-                  const Icon = mode.icon;
-                  const isSelected = selectedMode === mode.id;
-                  return (
-                    <Card 
-                      key={mode.id}
-                      className={`cursor-pointer ${
-                        isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
-                      }`}
-                      onClick={() => setSelectedMode(mode.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="text-center space-y-3">
-                          <div className={`mx-auto w-12 h-12 rounded-lg flex items-center justify-center ${
-                            mode.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
-                            mode.color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
-                            'bg-purple-100 text-purple-600 dark:bg-purple-900/30'
-                          }`}>
-                            <Icon className="h-6 w-6" />
+              {/* Step 2: Session Overview */}
+              {currentStep === 2 && selectedClassData && (
+                <div className="space-y-4">
+                  <Card className="p-4 bg-primary/5 border-primary/20">
+                    <div className="flex items-start gap-3">
+                      <BookOpen className="h-5 w-5 text-primary mt-1" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-2">{selectedClassData.course?.name || selectedClassData.name}</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Class</p>
+                            <p className="font-medium">{selectedClassData.name}</p>
                           </div>
                           <div>
-                            <h4 className="font-semibold mb-1">{mode.title}</h4>
-                            <p className="text-xs text-muted-foreground mb-2">{mode.description}</p>
-                            <div className="space-y-1">
-                              {mode.features.map((feature, idx) => (
-                                <div key={idx} className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                                  <CheckCircle className="h-2.5 w-2.5 text-green-500" />
-                                  {feature}
-                                </div>
-                              ))}
-                            </div>
+                            <p className="text-muted-foreground">Type</p>
+                            <p className="font-medium">{sessionType}</p>
                           </div>
-                          {isSelected && (
-                            <Badge className="bg-primary text-primary-foreground text-xs">
-                              Selected
-                            </Badge>
-                          )}
+                          <div>
+                            <p className="text-muted-foreground">Students</p>
+                            <p className="font-medium">{selectedClassData.currentEnrollment}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Location</p>
+                            <p className="font-medium">{location || selectedClassData.room || 'TBD'}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Instructor</p>
+                            <p className="font-medium">{currentUser?.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Date</p>
+                            <p className="font-medium">{new Date().toLocaleDateString()}</p>
+                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between items-center pt-6 border-t">
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handleBack} size="sm">
-                  Back
-                </Button>
+              {/* Step 3: Attendance Mode Selection */}
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold mb-1">Choose Attendance Mode</h3>
+                    <p className="text-muted-foreground text-sm">Select how you want to take attendance for this session</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    {attendanceModes.map((mode) => {
+                      const Icon = mode.icon;
+                      const isSelected = selectedMode === mode.id;
+                      return (
+                        <Card 
+                          key={mode.id}
+                          className={`cursor-pointer transition-all ${
+                            isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:bg-accent/50'
+                          }`}
+                          onClick={() => setSelectedMode(mode.id)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                mode.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
+                                mode.color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
+                                'bg-purple-100 text-purple-600 dark:bg-purple-900/30'
+                              }`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-sm">{mode.title}</h4>
+                                <p className="text-xs text-muted-foreground">{mode.description}</p>
+                              </div>
+                              {isSelected && (
+                                <CheckCircle className="h-5 w-5 text-primary" />
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
-              <Button variant="ghost" onClick={onClose} size="sm">
-                Cancel
+            </>
+          )}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0 p-3 sm:p-4 border-t">
+          <div className="flex gap-2 order-2 sm:order-1">
+            {currentStep > 1 && (
+              <Button variant="outline" onClick={handleBack} size="sm" className="flex-1 sm:flex-none">
+                Back
               </Button>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {currentStep < 3 ? (
-                <Button 
-                  onClick={handleNext}
-                  disabled={currentStep === 1 ? !canProceedStep1 : false}
-                  size="sm"
-                >
-                  Next Step
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleProceed}
-                  disabled={!canProceedStep3}
-                  size="sm"
-                >
-                  Start Session
-                </Button>
-              )}
-            </div>
+            )}
+            <Button variant="ghost" onClick={onClose} size="sm" className="flex-1 sm:flex-none">
+              Cancel
+            </Button>
+          </div>
+          
+          <div className="order-1 sm:order-2">
+            {currentStep < 3 ? (
+              <Button 
+                onClick={handleNext}
+                disabled={currentStep === 1 ? !canProceedStep1 : false}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                Next Step
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleProceed}
+                disabled={!canProceedStep3 || submitting}
+                size="sm"
+                className="w-full sm:w-auto min-w-[120px]"
+              >
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                    Creating...
+                  </>
+                ) : (
+                  'Start Session'
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>

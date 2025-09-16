@@ -197,6 +197,9 @@ model AttendanceSession {
   date                 DateTime          @db.Date
   startTime            DateTime          @map("start_time") @db.Time
   endTime              DateTime          @map("end_time") @db.Time
+  location             String?
+  notes                String?
+  sessionType          String?           @map("session_type")
   status               SessionStatus     @default(active)
   totalStudents        Int?              @map("total_students")
   presentCount         Int               @default(0) @map("present_count")

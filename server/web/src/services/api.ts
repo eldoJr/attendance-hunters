@@ -3,9 +3,11 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     try {
+      const token = this.getToken();
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           ...options?.headers,
         },
         ...options,
@@ -60,11 +62,59 @@ class ApiService {
 
   // Attendance API
   async getAttendanceRecords(): Promise<any[]> {
+    return await this.request<any[]>('/attendance/records');
+  }
+
+  async createAttendanceSession(sessionData: any): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.post('/attendance/sessions', sessionData);
+  }
+
+  async getAttendanceSession(sessionId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.get(`/attendance/sessions/${sessionId}`);
+  }
+
+  async markAttendance(recordData: any): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.post('/attendance/records', recordData);
+  }
+
+  async completeAttendanceSession(sessionId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.post(`/attendance/sessions/${sessionId}/complete`, {});
+  }
+
+  // Classes API
+  async getClasses(): Promise<any[]> {
     try {
-      return await this.request<any[]>('/attendance/records');
+      return await this.request<any[]>('/classes');
     } catch (error) {
-      return this.getFallbackAttendanceRecords();
+      return this.getFallbackClasses();
     }
+  }
+
+  // Auth API
+  async getCurrentUser(): Promise<any> {
+    try {
+      return await this.request<any>('/auth/me');
+    } catch (error) {
+      return this.getFallbackUser();
+    }
+  }
+
+  // Dashboard API
+  async getDashboardStats(): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.get('/dashboard/stats');
+  }
+
+  // Analytics API
+  async getAnalyticsOverview(): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.get('/analytics/overview');
+  }
+
+  async getStudentPerformance(studentId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.get(`/analytics/student/${studentId}`);
+  }
+
+  async getClassAnalytics(classId: string): Promise<{ success: boolean; data?: any; message?: string }> {
+    return await this.get(`/analytics/class/${classId}`);
   }
 
   // Auth API methods
@@ -85,7 +135,7 @@ class ApiService {
         return { success: false, message: data.message || `HTTP error! status: ${response.status}` };
       }
 
-      return { success: true, data: data.data, message: data.message };
+      return { success: true, data: data.data || data, message: data.message };
     } catch (error: any) {
       return { success: false, message: error.message };
     }
@@ -261,6 +311,44 @@ class ApiService {
       time: `${9 + (i % 8)}:00 AM`,
       status: ['present', 'absent', 'late'][i % 3]
     }));
+  }
+
+  private getFallbackClasses() {
+    return [
+      {
+        id: '1',
+        name: 'CS101-A',
+        code: 'CS101',
+        course: { name: 'Introduction to Computer Science', code: 'CS101' },
+        currentEnrollment: 45,
+        room: 'Room 101'
+      },
+      {
+        id: '2',
+        name: 'CS201-B',
+        code: 'CS201',
+        course: { name: 'Data Structures', code: 'CS201' },
+        currentEnrollment: 38,
+        room: 'Room 205'
+      },
+      {
+        id: '3',
+        name: 'EE101-A',
+        code: 'EE101',
+        course: { name: 'Circuit Analysis', code: 'EE101' },
+        currentEnrollment: 42,
+        room: 'Lab 301'
+      }
+    ];
+  }
+
+  private getFallbackUser() {
+    return {
+      id: '1',
+      name: 'Dr. John Smith',
+      role: 'staff',
+      email: 'john.smith@university.edu'
+    };
   }
 }
 

@@ -4,8 +4,61 @@ const { v4: uuidv4 } = require('uuid');
 
 const createSession = async (req, res, next) => {
   try {
-    const { classId, date, startTime, endTime } = req.body;
+    console.log('=== CREATE SESSION REQUEST ===');
+    console.log('Headers:', req.headers);
+    console.log('User:', req.user);
+    console.log('Body:', req.body);
+    console.log('Looking for faculty with userId:', req.user.id);
+    
+    const { classId, date, startTime, endTime, location, notes, sessionType } = req.body;
     const prisma = getClient();
+
+    // Validate required fields
+    if (!classId || !date || !startTime || !endTime) {
+      return res.status(400).json(error('Missing required fields: classId, date, startTime, endTime', 400));
+    }
+
+    // Find faculty record for this user (admins might not have one)
+    let faculty = await prisma.faculty.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    // For admin users, use any available faculty record
+    if (!faculty && req.user.role === 'admin') {
+      faculty = await prisma.faculty.findFirst();
+      if (!faculty) {
+        return res.status(400).json(error('No faculty records found in system', 400));
+      }
+    } else if (!faculty) {
+      return res.status(400).json(error('Faculty record not found for user', 400));
+    }
+
+    // Validate class exists
+    const classRecord = await prisma.class.findFirst({
+      where: { id: classId }
+    });
+
+    if (!classRecord) {
+      return res.status(400).json(error('Class not found', 400));
+    }
+
+    // For non-admin users, check if faculty owns this class
+    if (req.user.role !== 'admin' && classRecord.facultyId !== faculty.id) {
+      return res.status(403).json(error('Access denied. You can only create sessions for your own classes', 403));
+    }
+
+    // Check for existing active session
+    const existingSession = await prisma.attendanceSession.findFirst({
+      where: {
+        classId,
+        date: new Date(date),
+        status: 'active'
+      }
+    });
+
+    if (existingSession) {
+      return res.status(409).json(error('An active session already exists for this class today', 409));
+    }
 
     // Get enrolled students count
     const enrollmentCount = await prisma.studentEnrollment.count({
@@ -16,10 +69,13 @@ const createSession = async (req, res, next) => {
       data: {
         id: uuidv4(),
         classId,
-        facultyId: req.user.id,
+        facultyId: faculty.id,
         date: new Date(date),
         startTime: new Date(`1970-01-01T${startTime}`),
         endTime: new Date(`1970-01-01T${endTime}`),
+        location: location || null,
+        notes: notes || null,
+        sessionType: sessionType || 'lecture',
         totalStudents: enrollmentCount,
         status: 'active'
       },
@@ -34,6 +90,18 @@ const createSession = async (req, res, next) => {
 
     res.status(201).json(success(session, 'Attendance session created successfully'));
   } catch (err) {
+    console.error('=== CREATE SESSION ERROR ===');
+    console.error('Error:', err);
+    console.error('Stack:', err.stack);
+    
+    // Handle specific Prisma errors
+    if (err.code === 'P2003') {
+      return res.status(400).json(error('Invalid class or faculty reference', 400));
+    }
+    if (err.code === 'P2002') {
+      return res.status(409).json(error('Session already exists', 409));
+    }
+    
     next(err);
   }
 };
@@ -87,12 +155,21 @@ const markAttendance = async (req, res, next) => {
     const { studentId, classId, sessionId, status, method = 'manual', notes } = req.body;
     const prisma = getClient();
 
+    // Find faculty record for this user
+    const faculty = await prisma.faculty.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!faculty) {
+      return res.status(400).json(error('Faculty record not found for user', 400));
+    }
+
     const record = await prisma.attendanceRecord.create({
       data: {
         id: uuidv4(),
         studentId,
         classId,
-        facultyId: req.user.id,
+        facultyId: faculty.id,
         sessionId,
         date: new Date(),
         status,

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Auth Token</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fix Authentication Token</h1>
+        <p><strong>Note:</strong> If you get CORS errors, serve this file from http://localhost:8080 using: <code>python3 -m http.server 8080</code></p>
+        
+        <h3>Current Token Status:</h3>
+        <div id="status"></div>
+        
+        <h3>Set Token:</h3>
+        <button onclick="setAdminToken()">Set Admin Token</button>
+        <button onclick="setStaffToken()">Set Staff Token</button>
+        <button onclick="clearToken()">Clear Token</button>
+        
+        <h3>Test API:</h3>
+        <button onclick="testAPI()">Test Classes API</button>
+        <button onclick="testSession()">Test Create Session</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluXzAwMSIsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJuYW1lIjoiVGVzdCBBZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1Nzk5ODkxMCwiZXhwIjoxNzU4MDg1MzEwfQ.TV81Sg-ASqYTtv0_jMt3xv_kSYjYvyF9oEJfsidXKyo';
+        const staffToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZhY18wMDEiLCJlbWFpbCI6ImZhY3VsdHlAdGVzdC5jb20iLCJuYW1lIjoiVGVzdCBGYWN1bHR5Iiwicm9sZSI6InN0YWZmIiwiaWF0IjoxNzU3OTk3OTAyLCJleHAiOjE3NTgwODQzMDJ9.BYg-1EqXdJ1a45xNslOPk9bu2xaeqi-KpYOSes3eSu8';
+
+        function updateStatus() {
+            const token = localStorage.getItem('auth_token');
+            const statusDiv = document.getElementById('status');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    statusDiv.innerHTML = `<div class="success">Token set for: ${payload.name} (${payload.role})</div>`;
+                } catch (e) {
+                    statusDiv.innerHTML = `<div class="error">Invalid token format</div>`;
+                }
+            } else {
+                statusDiv.innerHTML = `<div class="error">No token set</div>`;
+            }
+        }
+
+        function setAdminToken() {
+            localStorage.setItem('auth_token', adminToken);
+            updateStatus();
+            showResult('Admin token set successfully!', 'success');
+        }
+
+        function setStaffToken() {
+            localStorage.setItem('auth_token', staffToken);
+            updateStatus();
+            showResult('Staff token set successfully!', 'success');
+        }
+
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            updateStatus();
+            showResult('Token cleared!', 'success');
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        async function testAPI() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                showResult('No token set!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3001/api/classes', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                showResult(`API Test: ${response.status} - ${JSON.stringify(data).substring(0, 100)}...`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult(`API Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSession() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                showResult('No token set!', 'error');
+                return;
+            }
+
+            // First get available classes
+            try {
+                const classesResponse = await fetch('http://localhost:3001/api/classes', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const classesData = await classesResponse.json();
+                
+                if (!classesResponse.ok || !classesData.data || classesData.data.length === 0) {
+                    showResult('No classes found to test with', 'error');
+                    return;
+                }
+
+                const firstClass = classesData.data[0];
+                const now = new Date();
+                const endTime = new Date(now.getTime() + 90 * 60000);
+                const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+                const payload = {
+                    classId: firstClass.id,
+                    date: dateStr,
+                    startTime: now.toTimeString().slice(0, 8),
+                    endTime: endTime.toTimeString().slice(0, 8),
+                    sessionType: 'lecture'
+                };
+
+                const response = await fetch('http://localhost:3001/api/attendance/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                showResult(`Session Test (${firstClass.name}): ${response.status} - ${JSON.stringify(data)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult(`Session Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        updateStatus();
+    </script>
+</body>
+</html>

@@ -1,26 +1,56 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/layout/Layout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../../components/ui/table';
-import { Users, Search, Send, Save } from 'lucide-react';
+import { Users, Search, Send, Save, ArrowLeft } from 'lucide-react';
 import { apiService } from '../../services/api';
 
 export const ManualModePage: React.FC = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadStudents = async () => {
+    const loadData = async () => {
       try {
-        const studentsData = await apiService.getStudents();
-        setStudents(studentsData.map(s => ({ ...s, present: false })));
+        setLoading(true);
+        const currentSessionId = localStorage.getItem('currentSessionId');
+        setSessionId(currentSessionId);
+        
+        // Get students from API
+        const response = await apiService.get('/students');
+        if (response.success && response.data) {
+          const studentsData = (response.data as any[]).map((s: any) => ({
+            id: s.id,
+            name: s.user?.name || s.name || 'Unknown Student',
+            enrollmentNumber: s.enrollmentNumber || s.studentId || 'N/A',
+            rollNumber: s.rollNumber || s.enrollmentNumber || s.studentId || 'N/A',
+            present: false
+          }));
+          setStudents(studentsData);
+        } else {
+          // Fallback data
+          setStudents(Array.from({ length: 30 }, (_, i) => ({
+            id: `${i + 1}`,
+            name: `Student ${i + 1}`,
+            enrollmentNumber: `STU${String(i + 1).padStart(3, '0')}`,
+            rollNumber: `${i + 1}`,
+            present: false
+          })));
+        }
       } catch (error) {
-        console.error('Failed to load students:', error);
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    loadStudents();
+    loadData();
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [rollNumbers, setRollNumbers] = useState('');
@@ -68,9 +98,20 @@ export const ManualModePage: React.FC = () => {
   return (
     <Layout>
       <div className="w-full px-4 space-y-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-1">Manual Attendance Mode</h1>
-          <p className="text-muted-foreground text-sm">Mark attendance manually from student list</p>
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/attendance/take')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+          <div className="text-center flex-1">
+            <h1 className="text-2xl font-bold mb-1">Manual Attendance Mode</h1>
+            <p className="text-muted-foreground text-sm">Mark attendance manually from student list</p>
+          </div>
+          <div className="w-20"></div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -266,11 +307,43 @@ export const ManualModePage: React.FC = () => {
                 <Button variant="outline" onClick={() => setShowSaveModal(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  console.log('Attendance saved:', students.filter(s => s.present));
-                  setShowSaveModal(false);
+                <Button onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const presentStudents = students.filter(s => s.present);
+                    const absentStudents = students.filter(s => !s.present);
+                    
+                    // Create attendance records for all students
+                    const attendancePromises = students.map(student => 
+                      apiService.markAttendance({
+                        sessionId: sessionId || 'temp-session',
+                        studentId: student.id,
+                        status: student.present ? 'present' : 'absent',
+                        timestamp: new Date().toISOString()
+                      })
+                    );
+                    
+                    await Promise.all(attendancePromises);
+                    
+                    // Complete the session if we have a session ID
+                    if (sessionId) {
+                      await apiService.completeAttendanceSession(sessionId);
+                    }
+                    
+                    setShowSaveModal(false);
+                    navigate('/attendance', { 
+                      state: { 
+                        message: `Attendance saved successfully! ${presentStudents.length} present, ${absentStudents.length} absent.` 
+                      }
+                    });
+                  } catch (error) {
+                    console.error('Failed to save attendance:', error);
+                    alert('Failed to save attendance. Please try again.');
+                  } finally {
+                    setSaving(false);
+                  }
                 }}>
-                  Save
+                  {saving ? 'Saving...' : 'Save'}
                 </Button>
               </div>
             </div>

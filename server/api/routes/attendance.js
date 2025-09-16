@@ -15,24 +15,27 @@ const {
 const router = express.Router();
 
 const validateSessionId = [
-  param('id').isUUID().withMessage('Valid session ID is required')
+  param('id').isString().isLength({ min: 1 }).withMessage('Valid session ID is required')
 ];
 
 const validateClassId = [
-  param('classId').isUUID().withMessage('Valid class ID is required')
+  param('classId').isString().isLength({ min: 1 }).withMessage('Valid class ID is required')
 ];
 
 const validateCreateSession = [
-  body('classId').isUUID().withMessage('Valid class ID is required'),
+  body('classId').isString().isLength({ min: 1 }).withMessage('Valid class ID is required'),
   body('date').isISO8601().withMessage('Valid date is required'),
-  body('startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid start time is required (HH:MM)'),
-  body('endTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid end time is required (HH:MM)')
+  body('startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/).withMessage('Valid start time is required (HH:MM or HH:MM:SS)'),
+  body('endTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/).withMessage('Valid end time is required (HH:MM or HH:MM:SS)'),
+  body('location').optional().isString().withMessage('Location must be a string'),
+  body('notes').optional().isString().withMessage('Notes must be a string'),
+  body('sessionType').optional().isIn(['lecture', 'lab', 'tutorial', 'exam']).withMessage('Session type must be lecture, lab, tutorial, or exam')
 ];
 
 const validateMarkAttendance = [
-  body('studentId').isUUID().withMessage('Valid student ID is required'),
-  body('classId').isUUID().withMessage('Valid class ID is required'),
-  body('sessionId').isUUID().withMessage('Valid session ID is required'),
+  body('studentId').isString().isLength({ min: 1 }).withMessage('Valid student ID is required'),
+  body('classId').isString().isLength({ min: 1 }).withMessage('Valid class ID is required'),
+  body('sessionId').isString().isLength({ min: 1 }).withMessage('Valid session ID is required'),
   body('status').isIn(['present', 'absent', 'late', 'excused']).withMessage('Valid status is required'),
   body('method').optional().isIn(['manual', 'qr', 'biometric', 'rfid']),
   body('notes').optional().isString()
@@ -44,8 +47,8 @@ const validateUpdateAttendance = [
 ];
 
 const validateAttendanceQuery = [
-  query('classId').optional().isUUID().withMessage('Valid class ID is required'),
-  query('studentId').optional().isUUID().withMessage('Valid student ID is required'),
+  query('classId').optional().isString().withMessage('Valid class ID is required'),
+  query('studentId').optional().isString().withMessage('Valid student ID is required'),
   query('startDate').optional().isISO8601().withMessage('Valid start date is required'),
   query('endDate').optional().isISO8601().withMessage('Valid end date is required'),
   query('status').optional().isIn(['present', 'absent', 'late', 'excused'])
