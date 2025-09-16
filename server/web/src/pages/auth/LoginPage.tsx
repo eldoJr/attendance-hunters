@@ -51,7 +51,7 @@ export const LoginPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-primary rounded-full mb-3 md:mb-4">
-            <img src={logo} alt="Logo" className="h-12 w-12 md:h-16 md:w-16 object-contain" />
+            <img src={logo} alt="Logo" className="h-28 w-28 md:h-24 md:w-24 object-contain" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">Attendance Hunters</h1>
           <p className="text-sm md:text-base text-muted-foreground">Sign in to your account</p>
