@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
             <img 
               src={logo} 
               alt="Attendance Hunters" 
-              className="h-12 w-12 md:h-16 md:w-16 object-contain"
+              className="h-16 w-16 md:h-24 md:w-24 object-contain"
             />
             <div className="hidden sm:block">
               <h1 className="text-lg md:text-xl font-semibold text-foreground">
